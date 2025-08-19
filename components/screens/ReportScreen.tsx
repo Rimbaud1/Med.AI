@@ -1,4 +1,5 @@
 
+
 import React, { useState } from 'react';
 import type { ReportData, PatientContext } from '../../types';
 import { WarningIcon, PillIcon, ClipboardListIcon, HeartIcon, ChatBubbleLeftRightIcon, DocumentArrowDownIcon, ClipboardIcon, ClipboardDocumentCheckIcon, ArrowTrendingUpIcon, MapPinIcon, CalendarDaysIcon, ClockIcon, AcademicCapIcon, EnvelopeIcon, ChartBarIcon } from '../icons';
@@ -12,10 +13,11 @@ interface ReportScreenProps {
   onGoToAppointmentPrep: () => void;
   onGoToScenarioSimulator: () => void;
   onStartTracking: () => void;
+  onGoToPillbox: () => void;
   isDirectFlow?: boolean;
 }
 
-const ReportScreen: React.FC<ReportScreenProps> = ({ report, patientContext, onReset, onStartSupportChat, onGoToSummary, onGoToAppointmentPrep, onGoToScenarioSimulator, onStartTracking, isDirectFlow = false }) => {
+const ReportScreen: React.FC<ReportScreenProps> = ({ report, patientContext, onReset, onStartSupportChat, onGoToSummary, onGoToAppointmentPrep, onGoToScenarioSimulator, onStartTracking, onGoToPillbox, isDirectFlow = false }) => {
   const [copyButtonText, setCopyButtonText] = useState('Copier le résumé');
   const [locationInput, setLocationInput] = useState('');
   const [showExcuseModal, setShowExcuseModal] = useState(false);
@@ -162,7 +164,7 @@ const ReportScreen: React.FC<ReportScreenProps> = ({ report, patientContext, onR
 
       <div className="mt-10">
         <h3 className="text-2xl font-bold text-center text-slate-100 mb-6">Prochaines Étapes</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {!isDirectFlow && (
               <>
                 <button onClick={onGoToSummary} className="bg-slate-700/80 text-white font-bold py-4 px-6 rounded-lg hover:bg-slate-600/80 transition duration-200 flex items-center justify-center gap-3 text-base sm:text-lg border border-slate-600">
@@ -192,13 +194,19 @@ const ReportScreen: React.FC<ReportScreenProps> = ({ report, patientContext, onR
               className="bg-indigo-600/80 text-white font-bold py-4 px-6 rounded-lg hover:bg-indigo-500/80 transition duration-200 flex items-center justify-center gap-3 text-base sm:text-lg border border-indigo-500"
             >
               <ArrowTrendingUpIcon className="h-7 w-7" />
-              Évolution Possible : Lancer le simulateur
+              Simulateur d'Évolution
             </button>
              {!isDirectFlow && (
-              <button onClick={handleStartTrackingClick} className="md:col-span-2 bg-purple-600/80 text-white font-bold py-4 px-6 rounded-lg hover:bg-purple-500/80 transition duration-200 flex items-center justify-center gap-3 text-base sm:text-lg border border-purple-500">
-                  <ChartBarIcon className="h-7 w-7" />
-                  Suivre l'Évolution de mes Symptômes
-              </button>
+              <>
+                <button onClick={handleStartTrackingClick} className="bg-purple-600/80 text-white font-bold py-4 px-6 rounded-lg hover:bg-purple-500/80 transition duration-200 flex items-center justify-center gap-3 text-base sm:text-lg border border-purple-500">
+                    <ChartBarIcon className="h-7 w-7" />
+                    Suivre mes Symptômes
+                </button>
+                <button onClick={onGoToPillbox} className="lg:col-span-2 bg-amber-600/80 text-white font-bold py-4 px-6 rounded-lg hover:bg-amber-500/80 transition duration-200 flex items-center justify-center gap-3 text-base sm:text-lg border border-amber-500">
+                    <PillIcon className="h-7 w-7" />
+                    Pilulier Intelligent & Suivi de Traitement
+                </button>
+              </>
             )}
         </div>
       </div>

@@ -114,7 +114,6 @@ const HowItWorksScreen: React.FC<HowItWorksScreenProps> = ({ onBackToLanding }) 
                                 <li><strong><ClipboardDocumentCheckIcon className="h-5 w-5 inline-block -mt-1 mr-1"/>Préparer ma Consultation :</strong> Pour réduire le stress d'un rdv médical, cet outil génère un <strong>script simple</strong> ("Bonjour Docteur, je viens vous voir car...") que vous pouvez lire, ainsi qu'une liste de <strong>questions probables</strong> que le médecin pourrait vous poser, pour que vous puissiez préparer vos réponses.</li>
                                 <li><strong><ArrowTrendingUpIcon className="h-5 w-5 inline-block -mt-1 mr-1"/>Simulateur d'Évolution :</strong> Une des fonctionnalités les plus puissantes. L'IA projette 3 scénarios pour les 48 prochaines heures : <strong>Favorable, À surveiller, et Inquiétant</strong>. Chaque scénario décrit les signes à observer et l'action à entreprendre, vous transformant en acteur de votre surveillance.</li>
                                 <li><strong><ChatBubbleLeftRightIcon className="h-5 w-5 inline-block -mt-1 mr-1"/>Soutien Psychologique "Aura" :</strong> Discutez de vos résultats et de vos angoisses avec Aura, notre IA conversationnelle. Son originalité : vous pouvez <strong>choisir son niveau d'empathie</strong>, de "Direct" à "Très Empathique", pour un soutien qui s'adapte à votre besoin du moment.</li>
-                                <li><strong><BookOpenIcon className="h-5 w-5 inline-block -mt-1 mr-1 text-purple-400"/>Journal de Symptômes :</strong> Après un diagnostic, Med.AI ne vous laisse pas seul avec un rapport. Il se transforme en partenaire à long terme en vous proposant de suivre l'évolution de vos symptômes principaux. Chaque jour, vous pouvez noter l'intensité de votre fatigue, de vos douleurs, etc., sur une échelle de 1 à 10. L'application génère alors des graphiques clairs, vous permettant, ainsi qu'à votre médecin, de visualiser objectivement l'évolution dans le temps et de juger de l'efficacité d'un traitement.</li>
                            </ul>
                         </FeatureCard>
                      </div>
@@ -122,14 +121,22 @@ const HowItWorksScreen: React.FC<HowItWorksScreenProps> = ({ onBackToLanding }) 
 
                 {/* Section 3: Autres Fonctionnalités */}
                 <div>
-                    <h2 className="text-3xl font-bold text-center text-slate-200 mb-6 pb-3 border-b-2 border-slate-700">Nos Autres Outils Stratégiques</h2>
+                    <h2 className="text-3xl font-bold text-center text-slate-200 mb-6 pb-3 border-b-2 border-slate-700">Nos Outils Proactifs et Stratégiques</h2>
                      <div className="space-y-6">
-                        <FeatureCard title="Plan de Prévention Personnalisé" icon={<ShieldCheckIcon className="h-8 w-8 text-sky-400" />}>
-                            <p>La santé, c'est aussi anticiper. Cet outil, accessible depuis l'accueil, vous permet de remplir un profil complet sur vos habitudes de vie (alimentation, sport, tabac...) et vos antécédents personnels et familiaux. En retour, l'IA vous fournit un <strong>plan d'action préventif</strong> avec des recommandations sur les dépistages à réaliser, les vaccins à vérifier et des conseils de style de vie pour prendre soin de votre santé sur le long terme.</p>
+                        <FeatureCard title="Plan de Prévention & Analyse de Risques" icon={<ShieldCheckIcon className="h-8 w-8 text-sky-400" />}>
+                            <p>La santé, c'est aussi anticiper. Cet outil vous permet de remplir un profil sur vos habitudes de vie et vos antécédents. En retour, l'IA ne se contente pas de donner des conseils génériques :</p>
+                            <ul className="list-disc list-inside pl-2 space-y-2">
+                                <li><strong>Analyse Prédictive des Risques :</strong> Elle calcule et explique des scores de risque pour des pathologies chroniques (diabète, maladies cardiovasculaires...). Elle vous dit pourquoi vous êtes concerné ("Basé sur votre sédentarité...") et propose une action concrète pour réduire ce risque ("...une marche de 30 min 3x/semaine peut réduire ce risque de 50%.").</li>
+                                <li><strong>Plan d'Action :</strong> Elle génère un plan personnalisé avec des recommandations sur les dépistages, vaccins et conseils de style de vie pertinents pour votre profil.</li>
+                            </ul>
                         </FeatureCard>
 
-                        <FeatureCard title="Accès Direct aux Conseils ('Je sais déjà ce que j'ai')" icon={<BeakerIcon className="h-8 w-8 text-sky-400" />}>
-                           <p>Un raccourci puissant pour les situations du quotidien. Si vous savez que vous avez une "Grippe" ou une "Gastro-entérite", entrez-le dans ce champ sur l'accueil. Vous obtiendrez <strong>instantanément une fiche d'information complète</strong> avec les conseils de prise en charge, les médicaments utiles, un guide nutritionnel adapté et, surtout, les <strong>signes de gravité</strong> qui doivent vous alerter et vous pousser à consulter.</p>
+                        <FeatureCard title="Journal de Santé & Détection de Tendances" icon={<BookOpenIcon className="h-8 w-8 text-sky-400" />}>
+                           <p>Après un diagnostic, Med.AI vous propose de suivre l'évolution de vos symptômes. Ce journal n'est pas passif ; il intègre une IA proactive :</p>
+                            <ul className="list-disc list-inside pl-2 space-y-2">
+                                <li><strong>Suivi & Visualisation :</strong> Enregistrez quotidiennement l'intensité de vos symptômes (1-10) et consultez des graphiques clairs pour visualiser leur évolution.</li>
+                                <li><strong>Détection de Tendances Anormales :</strong> À tout moment, demandez à l'IA d'analyser votre journal. Elle peut détecter des corrélations ou des dégradations que vous n'auriez pas vues (ex: "Nous avons remarqué que votre essoufflement augmente en même temps que votre fréquence cardiaque..."). C'est un gardien actif de votre santé.</li>
+                           </ul>
                         </FeatureCard>
 
                          <FeatureCard title="Guide d'Urgence et Premiers Secours" icon={<ShieldExclamationIcon className="h-8 w-8 text-sky-400" />}>

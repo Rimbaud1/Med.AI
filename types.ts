@@ -48,6 +48,11 @@ export enum AppState {
   PREVENTION_PLAN_PROFILE,
   GENERATING_PREVENTION_PLAN,
   PREVENTION_PLAN_REPORT,
+  ANALYZING_SYMPTOM_TRENDS,
+  PILLBOX,
+  PILLBOX_ADD_MEDICATION,
+  GENERATING_SIDE_EFFECTS,
+  MEDICATION_DETAIL,
   ERROR,
 }
 
@@ -174,6 +179,27 @@ export interface PreventionPlanData {
   generalDisclaimer: string;
 }
 
+export interface RiskAnalysisItem {
+  name: string;
+  riskLevel: 'Faible' | 'Modéré' | 'Élevé';
+  explanation: string;
+  suggestion: string;
+}
+
+export interface RiskAnalysis {
+  risks: RiskAnalysisItem[];
+}
+
+export interface TrendFinding {
+  finding: string;
+  explanation: string;
+}
+
+export interface TrendAnalysis {
+  summary: string;
+  findings: TrendFinding[];
+}
+
 export interface NeuroTest {
   question: string;
   answer: boolean; // true for oui, false for non
@@ -199,6 +225,25 @@ export interface TrackedSymptom {
   name: string;
   logs: SymptomLogEntry[];
 }
+
+// Types for Pillbox
+export type MedicationFrequency = '1x / jour' | '2x / jour' | '3x / jour' | 'Toutes les 4-6h' | 'Au besoin';
+
+export interface MedicationSideEffectInfo {
+    common: { name: string; description: string }[];
+    rare: { name: string; description: string; warning: string }[];
+}
+
+export interface Medication {
+  id: string; // unique ID, e.g., timestamp
+  name: string;
+  frequency: MedicationFrequency;
+  durationDays: number | null; // null for ongoing
+  startDate: string; // ISO string 'YYYY-MM-DD'
+  sideEffectInfo?: MedicationSideEffectInfo;
+  trackedSideEffects?: { date: string; notes: string }[];
+}
+
 
 // Types for User Settings & Profile
 export interface UserSettings {

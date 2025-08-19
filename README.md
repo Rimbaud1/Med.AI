@@ -11,7 +11,11 @@
 
 ## ✨ Key Features
 
-### 1. Guided Pre-Diagnosis Flow
+### 1. Proactive & Predictive AI (Anticipating, Not Just Reacting)
+- **💡 Predictive Risk Analysis:** Based on the user's Prevention Profile (age, lifestyle, family history), the AI calculates and explains personalized risk scores for chronic conditions like type 2 diabetes and cardiovascular diseases. It provides concrete, evidence-based suggestions to mitigate these risks (e.g., "Increasing physical activity by 30 minutes, 3 times a week, can reduce this risk by 50%").
+- **💡 Abnormal Trend Detection:** The AI acts as an active guardian by analyzing the user's Symptom Journal data. If it detects a negative trend or a worrying correlation (e.g., "We've noticed your resting heart rate has increased by 10 bpm over the last two weeks, concurrent with an increase in reported 'shortness of breath'"), it proactively alerts the user, suggesting a consultation with a doctor.
+
+### 2. Guided Pre-Diagnosis Flow
 A multi-step, intelligent process to gather comprehensive information about a user's health concern.
 - **Dynamic Questionnaire:** Generates a unique set of questions based on initial symptoms, age, and medical context.
 - **Symptom Quantification:** Allows users to rate the intensity of their symptoms for a more nuanced analysis.
@@ -24,7 +28,7 @@ A multi-step, intelligent process to gather comprehensive information about a us
 - **Multimodal Input:** Supports optional photo uploads for visible symptoms (e.g., rashes, throat irritation) for analysis by a multimodal AI model.
 - **Differential Diagnosis:** Utilizes an exclusion filter to help rule out other potential conditions.
 
-### 2. Comprehensive & Actionable Reporting
+### 3. Comprehensive & Actionable Reporting
 Once the assessment is complete, Med.AI generates a detailed report that includes:
 - **Possible Conditions:** A list of potential issues with confidence scores and simple descriptions.
 - **Severity Assessment:** A clear indicator of the estimated severity (Low, Moderate, High).
@@ -33,14 +37,14 @@ Once the assessment is complete, Med.AI generates a detailed report that include
 - **Intelligent Specialist Referral:** Recommends the most relevant medical specialist (e.g., General Practitioner, Pediatrician, Dermatologist) and provides a direct link to book an appointment on Doctolib, pre-filled with the specialty and user's location.
 - **PDF Export:** A beautifully formatted, detailed summary of the entire consultation, perfect for sharing with a healthcare professional.
 
-### 3. Post-Diagnosis Support Suite
+### 4. Post-Diagnosis Support Suite
 The journey doesn't end with the report. Med.AI offers a unique suite of tools to empower the user:
 - **Appointment Preparation:** Generates a script to help users explain their situation to a doctor and a list of potential questions the doctor might ask.
 - **Evolution Simulator:** Projects three possible evolution scenarios (Favorable, To Monitor, Worrying) for the next 48 hours, detailing signs to watch for and actions to take.
 - **Psychological Support Chat ("Aura"):** An AI-powered chat assistant with an adjustable empathy level (from 'Direct' to 'Very Empathetic') to discuss the report and alleviate anxiety.
 
-### 4. Proactive Health & Quick Access
-- **Personalized Prevention Plan:** Users can fill out a lifestyle and history profile to receive a proactive plan covering recommended screenings, vaccinations, and lifestyle advice.
+### 5. Proactive Health & Quick Access
+- **Personalized Prevention Plan:** Users can fill out a lifestyle and history profile to receive a proactive plan covering recommended screenings, vaccinations, and lifestyle advice, now enhanced with the **Predictive Risk Analysis**.
 - **Direct Diagnosis Lookup:** For users who already know their condition (e.g., "Flu"), this feature provides immediate access to care advice, monitoring instructions, and red flags.
 - **Emergency Guide:** A dedicated section for life-threatening situations with clear signs and one-click access to emergency numbers.
 
@@ -55,8 +59,9 @@ The application's intelligence relies on a sophisticated "chain-of-thought" prom
 2.  **Contextualization:** User's age, gender, medical history, etc., are formatted and provided as context.
 3.  **Conditional Logic:** A series of targeted AI calls determine if specific tests (like the memory or stability test) are relevant before proceeding.
 4.  **Dynamic Generation:** The core questionnaire, exclusion symptoms, and self-exam prompts are all generated in real-time by the AI based on the accumulated data.
-5.  **Structured Output:** The AI is instructed to return data in a strict JSON format using `responseSchema`, ensuring the application receives reliable, predictable data for rendering reports and tools.
-6.  **Final Synthesis:** All collected data points—from initial symptoms to test results and photo analysis—are compiled into a final, comprehensive prompt to generate the report.
+5.  **Proactive Analysis:** The AI is also used for proactive tasks like calculating disease risks from a user's profile and detecting trends in their symptom journal data.
+6.  **Structured Output:** The AI is instructed to return data in a strict JSON format using `responseSchema`, ensuring the application receives reliable, predictable data for rendering reports and tools.
+7.  **Final Synthesis:** All collected data points—from initial symptoms to test results and photo analysis—are compiled into a final, comprehensive prompt to generate the report.
 
 ### Tech Stack
 - **Frontend:** React, TypeScript, Tailwind CSS

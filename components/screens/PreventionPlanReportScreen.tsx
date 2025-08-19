@@ -1,10 +1,12 @@
 
+
 import React from 'react';
-import type { PreventionPlanData, PreventionRecommendation } from '../../types';
-import { WarningIcon, ShieldCheckIcon } from '../icons';
+import type { PreventionPlanData, PreventionRecommendation, RiskAnalysis } from '../../types';
+import { WarningIcon, ShieldCheckIcon, ShieldExclamationIcon } from '../icons';
 
 interface PreventionPlanReportScreenProps {
   plan: PreventionPlanData;
+  riskAnalysis: RiskAnalysis;
   onReset: () => void;
 }
 
@@ -16,6 +18,26 @@ const RecommendationCard: React.FC<{ item: PreventionRecommendation }> = ({ item
     </div>
 );
 
+const RiskCard: React.FC<{ item: RiskAnalysis['risks'][0] }> = ({ item }) => {
+    const styles = {
+        'Faible': { icon: <ShieldCheckIcon className="h-7 w-7 text-green-400" />, borderColor: 'border-green-500/30', bgColor: 'bg-green-500/10' },
+        'Modéré': { icon: <WarningIcon className="h-7 w-7 text-yellow-400" />, borderColor: 'border-yellow-500/30', bgColor: 'bg-yellow-500/10' },
+        'Élevé': { icon: <ShieldExclamationIcon className="h-7 w-7 text-red-400" />, borderColor: 'border-red-500/30', bgColor: 'bg-red-500/10' },
+    };
+    const style = styles[item.riskLevel] || styles['Faible'];
+
+    return (
+        <div className={`p-4 rounded-lg border ${style.borderColor} ${style.bgColor}`}>
+            <div className="flex items-center gap-3 mb-2">
+                {style.icon}
+                <h4 className="text-lg font-bold text-slate-100">{item.name} - <span className="text-slate-300">Risque {item.riskLevel}</span></h4>
+            </div>
+            <p className="text-sm text-slate-300 italic mb-2">{item.explanation}</p>
+            <p className="text-sm text-slate-200 bg-slate-900/50 p-2 rounded-md border border-slate-700">{item.suggestion}</p>
+        </div>
+    );
+};
+
 const ReportSection: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
     <div className="bg-slate-800/50 p-6 rounded-lg border border-slate-700">
         <h3 className="text-xl font-semibold text-slate-100 mb-4">{title}</h3>
@@ -24,7 +46,7 @@ const ReportSection: React.FC<{ title: string; children: React.ReactNode }> = ({
 );
 
 
-const PreventionPlanReportScreen: React.FC<PreventionPlanReportScreenProps> = ({ plan, onReset }) => {
+const PreventionPlanReportScreen: React.FC<PreventionPlanReportScreenProps> = ({ plan, riskAnalysis, onReset }) => {
 
     return (
         <div className="w-full max-w-4xl mx-auto p-4 md:p-8">
@@ -47,6 +69,13 @@ const PreventionPlanReportScreen: React.FC<PreventionPlanReportScreenProps> = ({
                         <p className="text-sm">{plan.generalDisclaimer}</p>
                     </div>
                 </div>
+
+                {/* Risk Analysis */}
+                {riskAnalysis && riskAnalysis.risks.length > 0 && (
+                     <ReportSection title="Analyse Prédictive des Risques">
+                        {riskAnalysis.risks.map((item, i) => <RiskCard key={i} item={item} />)}
+                    </ReportSection>
+                )}
 
                 {/* Recommended Screenings */}
                 {plan.recommendedScreenings && plan.recommendedScreenings.length > 0 && (

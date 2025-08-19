@@ -1,7 +1,8 @@
 
 
+
 import React, { useState } from 'react';
-import { StethoscopeIcon, ClipboardDocumentCheckIcon, ShieldExclamationIcon, ShieldCheckIcon, BeakerIcon, InformationCircleIcon, BookOpenIcon, Cog6ToothIcon } from '../icons';
+import { StethoscopeIcon, ClipboardDocumentCheckIcon, ShieldExclamationIcon, ShieldCheckIcon, BeakerIcon, InformationCircleIcon, BookOpenIcon, Cog6ToothIcon, PillIcon } from '../icons';
 
 interface LandingScreenProps {
   onStartDiagnosis: () => void;
@@ -12,9 +13,10 @@ interface LandingScreenProps {
   onShowSettings: () => void;
   hasJournalData: boolean;
   onGoToJournal: () => void;
+  onGoToPillbox: () => void;
 }
 
-const LandingScreen: React.FC<LandingScreenProps> = ({ onStartDiagnosis, onEmergency, onStartPreventionPlan, onDirectDiagnosisSubmit, onShowHowItWorks, onShowSettings, hasJournalData, onGoToJournal }) => {
+const LandingScreen: React.FC<LandingScreenProps> = ({ onStartDiagnosis, onEmergency, onStartPreventionPlan, onDirectDiagnosisSubmit, onShowHowItWorks, onShowSettings, hasJournalData, onGoToJournal, onGoToPillbox }) => {
   const [directDiagnosis, setDirectDiagnosis] = useState('');
 
   const handleDirectSubmit = (e: React.FormEvent) => {
@@ -111,29 +113,51 @@ const LandingScreen: React.FC<LandingScreenProps> = ({ onStartDiagnosis, onEmerg
           </span>
         </div>
 
-        {/* Symptom Journal Card */}
-        {hasJournalData && (
-          <div 
-            className="bg-slate-800/70 p-6 md:p-8 rounded-xl border border-slate-700 hover:border-purple-500 hover:bg-slate-800 transition-all duration-300 flex flex-col md:flex-row text-center md:text-left items-center cursor-pointer group"
-            onClick={onGoToJournal}
-            role="button"
-            tabIndex={0}
-            aria-label="Accéder à mon journal de santé"
-          >
-            <div className="flex-shrink-0 bg-purple-500/10 p-4 rounded-full mb-4 md:mb-0 md:mr-6 border border-purple-500/30 transition-colors duration-300 group-hover:bg-purple-500/20">
-              <BookOpenIcon className="h-10 w-10 text-purple-400" />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Pillbox Card */}
+            <div 
+              className="bg-slate-800/70 p-8 rounded-xl border border-slate-700 hover:border-amber-500 hover:bg-slate-800 transition-all duration-300 flex flex-col text-center items-center cursor-pointer group"
+              onClick={onGoToPillbox}
+              role="button"
+              tabIndex={0}
+              aria-label="Accéder à mon pilulier intelligent"
+            >
+              <div className="flex-shrink-0 bg-amber-500/10 p-4 rounded-full mb-4 border border-amber-500/30 transition-colors duration-300 group-hover:bg-amber-500/20">
+                <PillIcon className="h-10 w-10 text-amber-400" />
+              </div>
+              <div className="flex-grow flex flex-col">
+                <h2 className="text-2xl font-bold text-slate-100">Pilulier Intelligent</h2>
+                <p className="mt-2 text-slate-400 flex-grow">
+                  Gérez vos traitements, recevez des rappels et suivez les effets secondaires avec l'aide de l'IA.
+                </p>
+              </div>
+              <span className="mt-6 whitespace-nowrap bg-amber-600 text-white font-bold py-2 px-6 rounded-lg group-hover:bg-amber-500 transition-colors duration-300">
+                Ouvrir
+              </span>
             </div>
-            <div className="flex-grow">
-              <h2 className="text-2xl font-bold text-slate-100">Mon Journal de Santé</h2>
-              <p className="mt-2 text-slate-400">
-                Consultez et mettez à jour le suivi de vos symptômes.
-              </p>
+
+            {/* Symptom Journal Card */}
+            <div 
+              className={`bg-slate-800/70 p-8 rounded-xl border border-slate-700 hover:border-purple-500 hover:bg-slate-800 transition-all duration-300 flex flex-col text-center items-center group ${hasJournalData ? 'cursor-pointer' : 'opacity-60 cursor-not-allowed'}`}
+              onClick={hasJournalData ? onGoToJournal : undefined}
+              role="button"
+              tabIndex={hasJournalData ? 0 : -1}
+              aria-label="Accéder à mon journal de santé"
+            >
+              <div className="flex-shrink-0 bg-purple-500/10 p-4 rounded-full mb-4 border border-purple-500/30 transition-colors duration-300 group-hover:bg-purple-500/20">
+                <BookOpenIcon className="h-10 w-10 text-purple-400" />
+              </div>
+              <div className="flex-grow flex flex-col">
+                <h2 className="text-2xl font-bold text-slate-100">Mon Journal de Santé</h2>
+                <p className="mt-2 text-slate-400 flex-grow">
+                  {hasJournalData ? "Consultez et mettez à jour le suivi de vos symptômes." : "Disponible après votre premier diagnostic pour suivre l'évolution de vos symptômes."}
+                </p>
+              </div>
+              <span className={`mt-6 whitespace-nowrap text-white font-bold py-2 px-6 rounded-lg transition-colors duration-300 ${hasJournalData ? 'bg-purple-600 group-hover:bg-purple-500' : 'bg-slate-700'}`}>
+                {hasJournalData ? "Ouvrir" : "Verrouillé"}
+              </span>
             </div>
-            <span className="mt-6 md:mt-0 md:ml-auto md:ml-6 whitespace-nowrap bg-purple-600 text-white font-bold py-2 px-6 rounded-lg group-hover:bg-purple-500 transition-colors duration-300">
-              Ouvrir
-            </span>
-          </div>
-        )}
+        </div>
       </div>
       
       <div className="w-full mt-10 pt-8 border-t border-slate-700/80">

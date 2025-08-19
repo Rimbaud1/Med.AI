@@ -1,5 +1,7 @@
+
+
 import React from 'react';
-import { ShieldCheckIcon, ClipboardListIcon, BookOpenIcon, BeakerIcon } from '../icons';
+import { ShieldCheckIcon, ClipboardListIcon, BookOpenIcon, BeakerIcon, PillIcon } from '../icons';
 
 interface DataPrivacyScreenProps {
   onBack: () => void;
@@ -48,7 +50,12 @@ const DataPrivacyScreen: React.FC<DataPrivacyScreenProps> = ({ onBack }) => {
         </Section>
 
         <Section title="2. Données Persistantes (Stockage Local)" icon={<BookOpenIcon className="h-7 w-7 text-purple-400" />}>
-            <p><strong>Qu'est-ce que c'est ?</strong> Ce sont les données que vous choisissez explicitement de conserver pour améliorer votre expérience future. Cela concerne deux fonctionnalités : le <strong>Journal de Santé</strong> et le <strong>Profil de Pré-remplissage</strong>.</p>
+            <p><strong>Qu'est-ce que c'est ?</strong> Ce sont les données que vous choisissez explicitement de conserver pour améliorer votre expérience future. Cela concerne trois fonctionnalités :</p>
+            <ul className="list-disc list-inside pl-4 font-semibold">
+                <li>Le <strong>Profil de Pré-remplissage</strong> (données de contexte)</li>
+                <li>Le <strong>Journal de Santé</strong> (suivi de symptômes : nom, date, intensité, notes)</li>
+                <li>Le <strong>Pilulier Intelligent</strong> (nom du médicament, posologie, durée, suivi des effets)</li>
+            </ul>
             <p><strong>Où sont-elles stockées ?</strong> Dans le <code>localStorage</code> de votre navigateur. C'est un petit espace de stockage (~5-10 Mo) sécurisé, propre à chaque site web, directement sur le disque dur de votre appareil.</p>
             <p><strong>Durée de vie :</strong> Persistante. Ces données restent sur votre appareil même si vous fermez le navigateur, jusqu'à ce que vous décidiez de les supprimer manuellement via l'écran "Paramètres" ou en vidant le cache de votre navigateur pour ce site.</p>
             <p><strong>Implications importantes :</strong></p>
@@ -59,14 +66,20 @@ const DataPrivacyScreen: React.FC<DataPrivacyScreenProps> = ({ onBack }) => {
         </Section>
         
         <Section title="3. Interactions avec Google & Clé d'API" icon={<BeakerIcon className="h-7 w-7 text-indigo-400" />}>
-            <p>Pour fonctionner, Med.AI envoie les informations que vous fournissez (symptômes, contexte, etc.) à l'API de Google Gemini afin de générer les questions, analyses et rapports.</p>
-            <div className="p-4 rounded-md border border-yellow-500/30 bg-yellow-500/10 text-yellow-200">
+            <p>Pour fonctionner, Med.AI envoie les informations que vous fournissez à l'API de Google Gemini afin de générer les questions, analyses et rapports. Cela inclut :</p>
+             <ul className="list-disc list-inside pl-4">
+                <li>Les données de votre <strong>diagnostic en cours</strong> (symptômes, contexte, réponses...).</li>
+                <li>Les données de votre <strong>profil de prévention</strong> pour générer le plan et l'analyse de risques.</li>
+                <li>Les données de votre <strong>journal de santé</strong> lorsque vous demandez une analyse de tendances.</li>
+                <li>Le <strong>nom d'un médicament</strong> lorsque vous demandez une analyse d'effets secondaires.</li>
+            </ul>
+            <div className="mt-4 p-4 rounded-md border border-yellow-500/30 bg-yellow-500/10 text-yellow-200">
                 <p><strong className="font-semibold">Utilisation de la clé par défaut (gratuite) :</strong> Par défaut, Med.AI utilise une clé d'API fournie pour la démonstration. Conformément aux conditions d'utilisation des API gratuites de Google, les données envoyées <strong>peuvent être utilisées</strong> par Google pour améliorer ses modèles d'IA. Bien que les données soient anonymisées, elles ne sont pas considérées comme totalement privées.</p>
             </div>
-            <div className="p-4 rounded-md border border-green-500/30 bg-green-500/10 text-green-200">
+            <div className="mt-2 p-4 rounded-md border border-green-500/30 bg-green-500/10 text-green-200">
                 <p><strong className="font-semibold">Utilisation de votre propre clé d'API (payante) :</strong> Pour une confidentialité maximale, vous pouvez configurer votre propre clé d'API Google (associée à un projet Google Cloud avec facturation). Dans ce cas, vos données sont soumises aux conditions de Google Cloud et sont <strong>entièrement privées et confidentielles</strong>. Elles ne sont pas utilisées pour entraîner les modèles de Google.</p>
             </div>
-            <p>Vous pouvez configurer votre propre clé d'API dans l'écran <strong>Paramètres</strong> pour garantir que vos interactions avec l'IA restent privées.</p>
+            <p className="mt-2">Vous pouvez configurer votre propre clé d'API dans l'écran <strong>Paramètres</strong> pour garantir que vos interactions avec l'IA restent privées.</p>
         </Section>
 
       </div>

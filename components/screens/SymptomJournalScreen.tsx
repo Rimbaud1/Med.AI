@@ -1,12 +1,16 @@
 
+
 import React, { useState, useMemo } from 'react';
-import type { TrackedSymptom, SymptomLogEntry } from '../../types';
-import { BookOpenIcon, ChartBarIcon } from '../icons';
+import type { TrackedSymptom, SymptomLogEntry, TrendAnalysis } from '../../types';
+import { BookOpenIcon, ChartBarIcon, SparklesIcon } from '../icons';
 
 interface SymptomJournalScreenProps {
   journalData: TrackedSymptom[];
   onAddEntry: (symptomName: string, entry: Omit<SymptomLogEntry, 'date'>) => void;
   onBackToLanding: () => void;
+  onAnalyzeTrends: () => void;
+  trendAnalysis: TrendAnalysis | null;
+  onClearTrendAnalysis: () => void;
 }
 
 const SymptomChart: React.FC<{ logs: SymptomLogEntry[] }> = ({ logs }) => {
@@ -61,11 +65,15 @@ const SymptomChart: React.FC<{ logs: SymptomLogEntry[] }> = ({ logs }) => {
 };
 
 
-const SymptomJournalScreen: React.FC<SymptomJournalScreenProps> = ({ journalData, onAddEntry, onBackToLanding }) => {
+const SymptomJournalScreen: React.FC<SymptomJournalScreenProps> = ({ journalData, onAddEntry, onBackToLanding, onAnalyzeTrends, trendAnalysis, onClearTrendAnalysis }) => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedSymptom, setSelectedSymptom] = useState('');
     const [intensity, setIntensity] = useState(5);
     const [notes, setNotes] = useState('');
+
+    const canAnalyze = useMemo(() => {
+        return journalData.some(symptom => symptom.logs.length >= 3);
+    }, [journalData]);
 
     const openModal = (symptomName?: string) => {
         const today = new Date().toISOString().split('T')[0];
@@ -103,6 +111,24 @@ const SymptomJournalScreen: React.FC<SymptomJournalScreenProps> = ({ journalData
                         + Ajouter une entrée
                     </button>
                 </div>
+            </div>
+
+            <div className="mb-6 p-4 rounded-lg bg-indigo-900/40 border border-indigo-700 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div className='flex items-center gap-3'>
+                    <SparklesIcon className="h-8 w-8 text-indigo-400 flex-shrink-0" />
+                    <div>
+                         <h3 className="font-bold text-slate-100">Détection de Tendances Anormales</h3>
+                         <p className="text-sm text-indigo-200">Laissez l'IA analyser vos données pour y déceler des évolutions ou corrélations importantes.</p>
+                    </div>
+                </div>
+                <button
+                    onClick={onAnalyzeTrends}
+                    disabled={!canAnalyze}
+                    className="w-full sm:w-auto flex-shrink-0 bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-indigo-500 transition-colors disabled:bg-slate-700 disabled:text-slate-400 disabled:cursor-not-allowed"
+                    title={!canAnalyze ? "Ajoutez au moins 3 entrées pour un symptôme pour activer l'analyse." : ""}
+                >
+                    Analyser mes tendances
+                </button>
             </div>
 
             {journalData.length === 0 ? (
@@ -150,6 +176,39 @@ const SymptomJournalScreen: React.FC<SymptomJournalScreenProps> = ({ journalData
                         <div className="mt-6 flex justify-end gap-3">
                             <button onClick={() => setIsModalOpen(false)} className="bg-slate-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-slate-500">Annuler</button>
                             <button onClick={handleSave} className="bg-sky-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-sky-500">Enregistrer</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+             {trendAnalysis && (
+                <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-300">
+                    <div className="bg-slate-800 rounded-xl border border-slate-700 shadow-2xl w-full max-w-2xl p-6 relative animate-in zoom-in-95 duration-300 max-h-[90vh] flex flex-col">
+                         <div className="flex items-center gap-3 mb-4 flex-shrink-0">
+                            <SparklesIcon className="h-7 w-7 text-indigo-400" />
+                            <h3 className="text-xl font-bold text-slate-100">Résultats de l'Analyse des Tendances</h3>
+                        </div>
+                        <div className="flex-grow overflow-y-auto pr-2 space-y-4">
+                            <div className="p-4 rounded-lg bg-slate-900/50 border border-slate-700">
+                                <h4 className="font-semibold text-slate-200 mb-1">Résumé de l'IA :</h4>
+                                <p className="text-slate-300 italic">"{trendAnalysis.summary}"</p>
+                            </div>
+                             {trendAnalysis.findings.length > 0 && (
+                                <div>
+                                    <h4 className="font-semibold text-slate-200 mb-2">Découvertes Clés :</h4>
+                                    <div className="space-y-3">
+                                        {trendAnalysis.findings.map((item, index) => (
+                                            <div key={index} className="p-3 rounded-lg bg-indigo-900/40 border border-indigo-700/80">
+                                                <p className="font-semibold text-indigo-200">{item.finding}</p>
+                                                <p className="text-sm text-indigo-300 mt-1">{item.explanation}</p>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                             )}
+                        </div>
+                        <div className="mt-6 flex justify-end flex-shrink-0">
+                            <button onClick={onClearTrendAnalysis} className="bg-sky-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-sky-500">Compris</button>
                         </div>
                     </div>
                 </div>

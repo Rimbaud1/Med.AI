@@ -1,5 +1,6 @@
+
 import React, { useState, useEffect } from 'react';
-import type { UserSettings, TrackedSymptom } from '../../types';
+import type { UserSettings, TrackedSymptom, Medication } from '../../types';
 import { Cog6ToothIcon, InformationCircleIcon } from '../icons';
 
 interface SettingsScreenProps {
@@ -7,7 +8,9 @@ interface SettingsScreenProps {
   settings: UserSettings;
   onSettingsChange: (newSettings: UserSettings) => void;
   journalData: TrackedSymptom[];
+  pillboxData: Medication[];
   onClearJournal: () => void;
+  onClearPillbox: () => void;
   onClearProfile: () => void;
   onShowDataPrivacy: () => void;
 }
@@ -42,7 +45,7 @@ const Toggle: React.FC<{
   </div>
 );
 
-const SettingsScreen: React.FC<SettingsScreenProps> = ({ onBackToLanding, settings, onSettingsChange, journalData, onClearJournal, onClearProfile, onShowDataPrivacy }) => {
+const SettingsScreen: React.FC<SettingsScreenProps> = ({ onBackToLanding, settings, onSettingsChange, journalData, pillboxData, onClearJournal, onClearPillbox, onClearProfile, onShowDataPrivacy }) => {
   const [apiKeyInput, setApiKeyInput] = useState('');
   const [apiKeySaveStatus, setApiKeySaveStatus] = useState<'idle' | 'saved'>('idle');
 
@@ -64,6 +67,12 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ onBackToLanding, settin
   const handleClearJournal = () => {
     if(window.confirm("Êtes-vous sûr de vouloir supprimer définitivement votre journal de santé ? Cette action est irréversible.")) {
       onClearJournal();
+    }
+  }
+
+  const handleClearPillbox = () => {
+    if(window.confirm("Êtes-vous sûr de vouloir supprimer définitivement les données de votre pilulier ? Cette action est irréversible.")) {
+      onClearPillbox();
     }
   }
 
@@ -192,6 +201,15 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ onBackToLanding, settin
                 </div>
                 <button onClick={handleClearJournal} disabled={journalData.length === 0} className="w-full sm:w-auto bg-red-600/80 text-white font-bold py-2 px-4 rounded-lg hover:bg-red-500 disabled:bg-slate-700 disabled:text-slate-400 disabled:cursor-not-allowed transition-colors">
                   Vider le journal
+                </button>
+            </div>
+             <div className="p-4 rounded-lg bg-slate-800/60 border border-slate-700/80 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div>
+                  <h4 className="font-semibold text-slate-200">Pilulier Intelligent</h4>
+                  <p className="text-sm text-slate-400">{pillboxData.length > 0 ? `${pillboxData.length} traitement(s) enregistré(s).` : "Aucun traitement enregistré."}</p>
+                </div>
+                <button onClick={handleClearPillbox} disabled={pillboxData.length === 0} className="w-full sm:w-auto bg-red-600/80 text-white font-bold py-2 px-4 rounded-lg hover:bg-red-500 disabled:bg-slate-700 disabled:text-slate-400 disabled:cursor-not-allowed transition-colors">
+                  Vider le pilulier
                 </button>
             </div>
              <div className="p-4 rounded-lg bg-slate-800/60 border border-slate-700/80 flex flex-col sm:flex-row items-center justify-between gap-4">

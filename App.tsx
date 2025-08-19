@@ -1,7 +1,9 @@
+
+
 import React, { useState, useCallback, useEffect } from 'react';
 import { AppState } from './types';
-import type { Question, Answer, ReportData, PatientContext, SymptomIntensity, PreQuestionnaireAnswer, SymptomCharacteristics, ChatMessage, AppointmentPrepData, EmpathyLevel, ScenarioData, PreventionProfile, PreventionPlanData, NeuroTest, StabilityTestResult, CapillaryRefillTimeResult, SpeechDyspneaResult, TrackedSymptom, SymptomLogEntry, UserSettings, UserProfileData } from './types';
-import { initializeAi, generateQuestions, generateReport, extractSymptoms, generateExclusionSymptoms, generateSelfExamPrompt, generateNeuroTests, shouldRequestCRT, shouldRequestRespiratoryRate, shouldRequestStabilityTest, shouldRequestSpeechDyspneaTest, generatePhotoPrompt, generateAppointmentPrepData, generateScenarios, generatePreventionPlan, generateDirectReport, shouldTriggerMemoryTest, generateMemoryTestWords } from './services/geminiService';
+import type { Question, Answer, ReportData, PatientContext, SymptomIntensity, PreQuestionnaireAnswer, SymptomCharacteristics, ChatMessage, AppointmentPrepData, EmpathyLevel, ScenarioData, PreventionProfile, PreventionPlanData, NeuroTest, StabilityTestResult, CapillaryRefillTimeResult, SpeechDyspneaResult, TrackedSymptom, SymptomLogEntry, UserSettings, UserProfileData, Medication, RiskAnalysis, TrendAnalysis } from './types';
+import { initializeAi, generateQuestions, generateReport, extractSymptoms, generateExclusionSymptoms, generateSelfExamPrompt, generateNeuroTests, shouldRequestCRT, shouldRequestRespiratoryRate, shouldRequestStabilityTest, shouldRequestSpeechDyspneaTest, generatePhotoPrompt, generateAppointmentPrepData, generateScenarios, generatePreventionPlan, generateDirectReport, shouldTriggerMemoryTest, generateMemoryTestWords, generateMedicationSideEffects, generateRiskAnalysis, analyzeSymptomTrends } from './services/geminiService';
 import { GoogleGenAI } from "@google/genai";
 import type { Chat } from "@google/genai";
 
@@ -40,6 +42,9 @@ import PreventionProfileScreen from './components/screens/PreventionProfileScree
 import PreventionPlanReportScreen from './components/screens/PreventionPlanReportScreen';
 import SymptomJournalSetupScreen from './components/screens/SymptomJournalSetupScreen';
 import SymptomJournalScreen from './components/screens/SymptomJournalScreen';
+import PillboxScreen from './components/screens/PillboxScreen';
+import AddMedicationScreen from './components/screens/AddMedicationScreen';
+import MedicationDetailScreen from './components/screens/MedicationDetailScreen';
 
 const App: React.FC = () => {
   const [appState, setAppState] = useState<AppState>(AppState.LANDING);
@@ -81,6 +86,8 @@ const App: React.FC = () => {
   // Prevention Plan state
   const [preventionProfile, setPreventionProfile] = useState<PreventionProfile | null>(null);
   const [preventionPlan, setPreventionPlan] = useState<PreventionPlanData | null>(null);
+  const [riskAnalysis, setRiskAnalysis] = useState<RiskAnalysis | null>(null);
+
 
   // Chat state
   const [chatSession, setChatSession] = useState<Chat | null>(null);
@@ -91,6 +98,11 @@ const App: React.FC = () => {
   // Symptom Journal state
   const [symptomsToTrackSetup, setSymptomsToTrackSetup] = useState<string[]>([]);
   const [journalData, setJournalData] = useState<TrackedSymptom[]>([]);
+  const [trendAnalysis, setTrendAnalysis] = useState<TrendAnalysis | null>(null);
+
+  // Pillbox state
+  const [pillboxData, setPillboxData] = useState<Medication[]>([]);
+  const [activeMedicationId, setActiveMedicationId] = useState<string | null>(null);
 
   // Settings & Profile state
   const [userSettings, setUserSettings] = useState<UserSettings>({
@@ -112,6 +124,9 @@ const App: React.FC = () => {
     try {
       const savedJournal = localStorage.getItem('medai-journal');
       if (savedJournal) setJournalData(JSON.parse(savedJournal));
+
+      const savedPillbox = localStorage.getItem('medai-pillbox');
+      if (savedPillbox) setPillboxData(JSON.parse(savedPillbox));
 
       const savedSettings = localStorage.getItem('medai-settings');
       if (savedSettings) setUserSettings(JSON.parse(savedSettings));
@@ -158,6 +173,15 @@ const App: React.FC = () => {
     }
   }, []);
 
+   const clearPillbox = useCallback(() => {
+    setPillboxData([]);
+    try {
+      localStorage.removeItem('medai-pillbox');
+    } catch (error) {
+      console.error("Failed to clear pillbox data", error);
+    }
+  }, []);
+
   const clearProfile = useCallback(() => {
     setUserProfile(null);
     const clearedSettings: UserSettings = {
@@ -188,6 +212,19 @@ const App: React.FC = () => {
       console.error("Failed to save journal data to localStorage", error);
     }
   }, [journalData]);
+  
+  // Save pillbox to localStorage whenever it changes
+  useEffect(() => {
+    try {
+      if (pillboxData.length > 0) {
+        localStorage.setItem('medai-pillbox', JSON.stringify(pillboxData));
+      } else {
+        localStorage.removeItem('medai-pillbox');
+      }
+    } catch (error) {
+      console.error("Failed to save pillbox data to localStorage", error);
+    }
+  }, [pillboxData]);
 
 
   const handleError = useCallback((errorMessage: string) => {
@@ -786,13 +823,18 @@ const App: React.FC = () => {
     setPreventionProfile(profile);
     setAppState(AppState.GENERATING_PREVENTION_PLAN);
     try {
-      const plan = await generatePreventionPlan(profile);
-      setPreventionPlan(plan);
-      setAppState(AppState.PREVENTION_PLAN_REPORT);
+        const [plan, risks] = await Promise.all([
+            generatePreventionPlan(profile),
+            generateRiskAnalysis(profile)
+        ]);
+        setPreventionPlan(plan);
+        setRiskAnalysis(risks);
+        setAppState(AppState.PREVENTION_PLAN_REPORT);
     } catch (err) {
-      handleError(err instanceof Error ? err.message : "Impossible de générer le plan de prévention.");
+        handleError(err instanceof Error ? err.message : "Impossible de générer le plan de prévention.");
     }
   }, [handleError]);
+
 
   const handleStartTracking = useCallback(() => {
     const symptomsToSuggest = new Set<string>();
@@ -844,6 +886,80 @@ const App: React.FC = () => {
       });
     });
   }, []);
+  
+  const handleAnalyzeTrends = useCallback(async () => {
+    setAppState(AppState.ANALYZING_SYMPTOM_TRENDS);
+    try {
+      const analysis = await analyzeSymptomTrends(journalData);
+      setTrendAnalysis(analysis);
+    } catch (err) {
+      console.error("Failed to analyze trends", err);
+      // Set a user-friendly error state for the modal
+      setTrendAnalysis({ 
+        summary: "Une erreur est survenue lors de l'analyse de vos données. Veuillez réessayer.",
+        findings: [] 
+      });
+    } finally {
+      setAppState(AppState.SYMPTOM_JOURNAL);
+    }
+  }, [journalData]);
+
+  const handleClearTrendAnalysis = useCallback(() => {
+    setTrendAnalysis(null);
+  }, []);
+
+  // Pillbox Handlers
+  const handleGoToPillbox = useCallback(() => {
+    setAppState(AppState.PILLBOX);
+  }, []);
+
+  const handleAddMedication = useCallback((medication: Medication) => {
+    setPillboxData(prev => [...prev, medication]);
+    setAppState(AppState.PILLBOX);
+  }, []);
+
+  const handleNavigateToMedicationDetail = useCallback(async (medicationId: string) => {
+    setActiveMedicationId(medicationId);
+    const medication = pillboxData.find(m => m.id === medicationId);
+    if (!medication) return;
+
+    if (medication.sideEffectInfo) {
+        setAppState(AppState.MEDICATION_DETAIL);
+    } else {
+        setAppState(AppState.GENERATING_SIDE_EFFECTS);
+        try {
+            const info = await generateMedicationSideEffects(medication.name);
+            setPillboxData(prev => prev.map(m => m.id === medicationId ? {...m, sideEffectInfo: info} : m));
+            setAppState(AppState.MEDICATION_DETAIL);
+        } catch (err) {
+            handleError(err instanceof Error ? err.message : "Erreur lors de la récupération des effets secondaires.");
+        }
+    }
+  }, [pillboxData, handleError]);
+
+  const handleUpdateSideEffectNotes = useCallback((medicationId: string, notes: string) => {
+      const today = new Date().toISOString().split('T')[0];
+      setPillboxData(prev => prev.map(med => {
+          if (med.id === medicationId) {
+              const newLog = { date: today, notes };
+              const existingLogs = med.trackedSideEffects || [];
+              const logIndex = existingLogs.findIndex(l => l.date === today);
+
+              let updatedLogs;
+              if (logIndex > -1) {
+                  updatedLogs = [...existingLogs];
+                  updatedLogs[logIndex] = newLog;
+              } else {
+                  updatedLogs = [...existingLogs, newLog];
+              }
+              
+              updatedLogs.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+              
+              return { ...med, trackedSideEffects: updatedLogs };
+          }
+          return med;
+      }));
+  }, []);
 
 
   const resetApp = () => {
@@ -879,22 +995,25 @@ const App: React.FC = () => {
     setIsChatResponding(false);
     setPreventionProfile(null);
     setPreventionPlan(null);
+    setRiskAnalysis(null);
+    setTrendAnalysis(null);
     setIsDirectFlow(false);
     setIsMemoryTestRelevant(false);
     setMemoryTestWords([]);
     setMemoryTestResponse([]);
+    setActiveMedicationId(null);
   };
   
   const renderContent = () => {
     switch (appState) {
       case AppState.LANDING:
-        return <LandingScreen onStartDiagnosis={handleNavigateToPreDiagnosis} onEmergency={handleNavigateToEmergencyGuide} onStartPreventionPlan={handleNavigateToPreventionPlan} onDirectDiagnosisSubmit={handleDirectDiagnosisSubmit} onShowHowItWorks={handleNavigateToHowItWorks} onShowSettings={handleNavigateToSettings} hasJournalData={journalData.length > 0} onGoToJournal={handleGoToJournal} />;
+        return <LandingScreen onStartDiagnosis={handleNavigateToPreDiagnosis} onEmergency={handleNavigateToEmergencyGuide} onStartPreventionPlan={handleNavigateToPreventionPlan} onDirectDiagnosisSubmit={handleDirectDiagnosisSubmit} onShowHowItWorks={handleNavigateToHowItWorks} onShowSettings={handleNavigateToSettings} hasJournalData={journalData.length > 0} onGoToJournal={handleGoToJournal} onGoToPillbox={handleGoToPillbox} />;
       case AppState.HOW_IT_WORKS:
         return <HowItWorksScreen onBackToLanding={resetApp} />;
       case AppState.EMERGENCY_GUIDE:
         return <EmergencyGuideScreen onBack={() => setAppState(AppState.LANDING)} />;
       case AppState.SETTINGS:
-        return <SettingsScreen onBackToLanding={resetApp} settings={userSettings} onSettingsChange={handleSettingsChange} journalData={journalData} onClearJournal={clearJournal} onClearProfile={clearProfile} onShowDataPrivacy={handleNavigateToDataPrivacy} />;
+        return <SettingsScreen onBackToLanding={resetApp} settings={userSettings} onSettingsChange={handleSettingsChange} journalData={journalData} pillboxData={pillboxData} onClearJournal={clearJournal} onClearPillbox={clearPillbox} onClearProfile={clearProfile} onShowDataPrivacy={handleNavigateToDataPrivacy} />;
       case AppState.DATA_PRIVACY_EXPLANATION:
         return <DataPrivacyScreen onBack={() => setAppState(AppState.SETTINGS)} />;
       case AppState.PRE_DIAGNOSIS:
@@ -982,12 +1101,13 @@ const App: React.FC = () => {
             onGoToAppointmentPrep={handleGoToAppointmentPrep}
             onGoToScenarioSimulator={handleGoToScenarioSimulator}
             onStartTracking={handleStartTracking}
+            onGoToPillbox={handleGoToPillbox}
             isDirectFlow={isDirectFlow}
         />;
       case AppState.SYMPTOM_JOURNAL_SETUP:
         return <SymptomJournalSetupScreen suggestedSymptoms={symptomsToTrackSetup} onSubmit={handleJournalSetupComplete} onBackToReport={handleBackToReport} />;
       case AppState.SYMPTOM_JOURNAL:
-        return <SymptomJournalScreen journalData={journalData} onAddEntry={handleAddJournalEntry} onBackToLanding={resetApp} />;
+        return <SymptomJournalScreen journalData={journalData} onAddEntry={handleAddJournalEntry} onBackToLanding={resetApp} onAnalyzeTrends={handleAnalyzeTrends} trendAnalysis={trendAnalysis} onClearTrendAnalysis={handleClearTrendAnalysis} />;
       case AppState.DIAGNOSTIC_SUMMARY:
         if (!patientContext || !report) return <ErrorScreen message="Les données du récapitulatif sont manquantes." onRetry={resetApp} />;
         return <DiagnosticSummaryScreen 
@@ -1036,12 +1156,25 @@ const App: React.FC = () => {
       case AppState.GENERATING_PREVENTION_PLAN:
         return <Loader text="Génération de votre plan de prévention personnalisé..." />;
       case AppState.PREVENTION_PLAN_REPORT:
-        if (!preventionPlan) return <ErrorScreen message="Le plan de prévention n'a pas pu être généré." onRetry={resetApp} />;
-        return <PreventionPlanReportScreen plan={preventionPlan} onReset={resetApp} />;
+        if (!preventionPlan || !riskAnalysis) return <ErrorScreen message="Le plan de prévention n'a pas pu être généré." onRetry={resetApp} />;
+        return <PreventionPlanReportScreen plan={preventionPlan} riskAnalysis={riskAnalysis} onReset={resetApp} />;
+       case AppState.ANALYZING_SYMPTOM_TRENDS:
+        return <Loader text="Analyse de vos tendances de santé..." />;
+      case AppState.PILLBOX:
+        return <PillboxScreen pillboxData={pillboxData} onNavigateToAdd={() => setAppState(AppState.PILLBOX_ADD_MEDICATION)} onNavigateToDetail={handleNavigateToMedicationDetail} onBackToLanding={resetApp} />;
+      case AppState.PILLBOX_ADD_MEDICATION:
+        return <AddMedicationScreen onAddMedication={handleAddMedication} onBack={() => setAppState(AppState.PILLBOX)} />;
+      case AppState.GENERATING_SIDE_EFFECTS:
+        return <Loader text="Recherche des informations sur les effets secondaires..." />;
+      case AppState.MEDICATION_DETAIL: {
+        const activeMed = pillboxData.find(m => m.id === activeMedicationId);
+        if (!activeMed) return <ErrorScreen message="Médicament non trouvé." onRetry={() => setAppState(AppState.PILLBOX)} />;
+        return <MedicationDetailScreen medication={activeMed} onUpdateSideEffectNotes={handleUpdateSideEffectNotes} onBack={() => setAppState(AppState.PILLBOX)} />;
+      }
       case AppState.ERROR:
         return <ErrorScreen message={error || "Une erreur inconnue est survenue."} onRetry={resetApp} />;
       default:
-        return <LandingScreen onStartDiagnosis={handleNavigateToPreDiagnosis} onEmergency={handleNavigateToEmergencyGuide} onStartPreventionPlan={handleNavigateToPreventionPlan} onDirectDiagnosisSubmit={handleDirectDiagnosisSubmit} onShowHowItWorks={handleNavigateToHowItWorks} onShowSettings={handleNavigateToSettings} hasJournalData={journalData.length > 0} onGoToJournal={handleGoToJournal} />;
+        return <LandingScreen onStartDiagnosis={handleNavigateToPreDiagnosis} onEmergency={handleNavigateToEmergencyGuide} onStartPreventionPlan={handleNavigateToPreventionPlan} onDirectDiagnosisSubmit={handleDirectDiagnosisSubmit} onShowHowItWorks={handleNavigateToHowItWorks} onShowSettings={handleNavigateToSettings} hasJournalData={journalData.length > 0} onGoToJournal={handleGoToJournal} onGoToPillbox={handleGoToPillbox} />;
     }
   };
 

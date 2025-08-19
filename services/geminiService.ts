@@ -1,6 +1,7 @@
 
+
 import { GoogleGenAI, Type } from "@google/genai";
-import type { Question, ReportData, Answer, PatientContext, PossibleIssue, SymptomIntensity, PreQuestionnaireAnswer, SymptomCharacteristics, AppointmentPrepData, ScenarioData, PreventionProfile, PreventionPlanData, NeuroTest, StabilityTestResult, CapillaryRefillTimeResult, SpeechDyspneaResult } from '../types';
+import type { Question, ReportData, Answer, PatientContext, PossibleIssue, SymptomIntensity, PreQuestionnaireAnswer, SymptomCharacteristics, AppointmentPrepData, ScenarioData, PreventionProfile, PreventionPlanData, NeuroTest, StabilityTestResult, CapillaryRefillTimeResult, SpeechDyspneaResult, MedicationSideEffectInfo, RiskAnalysis, TrackedSymptom, TrendAnalysis } from '../types';
 
 let _ai: GoogleGenAI | null = null;
 
@@ -1125,4 +1126,159 @@ export async function generatePreventionPlan(profile: PreventionProfile): Promis
     console.error("Error generating prevention plan:", error);
     throw new Error("Impossible de générer le plan de prévention. Veuillez réessayer.");
   }
+}
+
+export async function generateRiskAnalysis(profile: PreventionProfile): Promise<RiskAnalysis> {
+    const ai = getClient();
+    const model = 'gemini-2.5-flash';
+    const systemInstruction = `Tu es un assistant de santé prédictive. Ton rôle est d'analyser le profil de l'utilisateur pour identifier les risques de pathologies chroniques (diabète de type 2, maladies cardiovasculaires, etc.).
+    Pour chaque risque identifié (2-3 maximum), fournis :
+    1. 'name': Le nom de la pathologie.
+    2. 'riskLevel': Un niveau de risque ('Faible', 'Modéré', 'Élevé').
+    3. 'explanation': Une explication CLAIRE et PERSONNALISÉE expliquant pourquoi ce risque est identifié, en te basant sur les informations fournies (ex: "Basé sur votre sédentarité et vos antécédents familiaux...").
+    4. 'suggestion': Une suggestion d'action CONCRÈTE et chiffrée pour réduire ce risque (ex: "Une augmentation de 30 minutes d'activité physique 3 fois par semaine peut réduire ce risque de moitié.").
+    Sois factuel, basé sur des données de santé publique générales, et non alarmiste. La réponse doit être en français et au format JSON.`;
+
+    const prompt = `Analyse le profil suivant et génère l'analyse de risque :\n${formatPreventionProfile(profile)}`;
+
+    try {
+        const response = await ai.models.generateContent({
+            model,
+            contents: prompt,
+            config: {
+                systemInstruction,
+                responseMimeType: 'application/json',
+                responseSchema: {
+                    type: Type.OBJECT,
+                    properties: {
+                        risks: {
+                            type: Type.ARRAY,
+                            items: {
+                                type: Type.OBJECT,
+                                properties: {
+                                    name: { type: Type.STRING },
+                                    riskLevel: { type: Type.STRING },
+                                    explanation: { type: Type.STRING },
+                                    suggestion: { type: Type.STRING },
+                                },
+                                required: ["name", "riskLevel", "explanation", "suggestion"]
+                            }
+                        }
+                    },
+                    required: ["risks"]
+                }
+            }
+        });
+        const jsonString = response.text;
+        return JSON.parse(jsonString) as RiskAnalysis;
+    } catch (error) {
+        console.error("Error generating risk analysis:", error);
+        throw new Error("Impossible de générer l'analyse de risque.");
+    }
+}
+
+export async function analyzeSymptomTrends(journalData: TrackedSymptom[]): Promise<TrendAnalysis> {
+    const ai = getClient();
+    const model = 'gemini-2.5-flash';
+    const systemInstruction = `Tu es un assistant médical IA spécialisé dans l'analyse de données de santé. Analyse les données du journal de symptômes d'un patient pour y déceler des tendances ou des corrélations potentiellement significatives.
+    La réponse doit être en français et au format JSON avec deux clés :
+    1. 'summary': Un résumé global de 1-2 phrases sur l'évolution générale.
+    2. 'findings': Un tableau d'objets. Chaque objet représente une découverte et doit contenir :
+        - 'finding': Une description concise de la tendance ou corrélation (ex: "Augmentation de l'essoufflement corrélée à une augmentation de la fatigue").
+        - 'explanation': Une brève explication sur la pertinence de cette découverte et un conseil (ex: "Cette corrélation pourrait indiquer... Il serait pertinent d'en discuter avec votre médecin.").
+    Identifie 1 à 3 découvertes pertinentes maximum. Si aucune tendance notable n'est trouvée, le tableau 'findings' peut être vide et le résumé doit l'indiquer.`;
+
+    const formattedJournal = journalData.map(symptom => {
+        const logs = symptom.logs.map(log => `- ${log.date}: Intensité ${log.intensity}/10${log.notes ? ` (Notes: ${log.notes})` : ''}`).join('\n');
+        return `Symptôme: "${symptom.name}"\n${logs}`;
+    }).join('\n\n');
+
+    const prompt = `Voici le journal de symptômes du patient. Analyse-le pour trouver des tendances.\n\n${formattedJournal}`;
+
+    try {
+        const response = await ai.models.generateContent({
+            model,
+            contents: prompt,
+            config: {
+                systemInstruction,
+                responseMimeType: 'application/json',
+                responseSchema: {
+                    type: Type.OBJECT,
+                    properties: {
+                        summary: { type: Type.STRING },
+                        findings: {
+                            type: Type.ARRAY,
+                            items: {
+                                type: Type.OBJECT,
+                                properties: {
+                                    finding: { type: Type.STRING },
+                                    explanation: { type: Type.STRING },
+                                },
+                                required: ["finding", "explanation"]
+                            }
+                        }
+                    },
+                    required: ["summary", "findings"]
+                }
+            }
+        });
+        const jsonString = response.text;
+        return JSON.parse(jsonString) as TrendAnalysis;
+    } catch (error) {
+        console.error("Error analyzing symptom trends:", error);
+        throw new Error("Impossible d'analyser les tendances des symptômes.");
+    }
+}
+
+
+export async function generateMedicationSideEffects(medicationName: string): Promise<MedicationSideEffectInfo> {
+    const ai = getClient();
+    const model = 'gemini-2.5-flash';
+    const prompt = `Pour le médicament "${medicationName}", génère une liste d'effets secondaires potentiels.
+    Fais la distinction claire entre les effets "communs" (fréquents et souvent bénins) et les effets "rares" (rares mais potentiellement graves).
+    Pour les effets rares, inclus un avertissement clair sur quand contacter un médecin.
+    Fournis 3 à 5 effets communs et 2 à 3 effets rares.
+    La réponse doit être en français et uniquement au format JSON.`;
+
+    const sideEffectSchema = {
+        type: Type.OBJECT,
+        properties: {
+            name: { type: Type.STRING, description: "Nom de l'effet secondaire." },
+            description: { type: Type.STRING, description: "Brève description de l'effet." },
+        },
+        required: ["name", "description"]
+    };
+
+    const rareSideEffectSchema = {
+        type: Type.OBJECT,
+        properties: {
+            name: { type: Type.STRING, description: "Nom de l'effet secondaire rare." },
+            description: { type: Type.STRING, description: "Brève description de l'effet." },
+            warning: { type: Type.STRING, description: "Avertissement clair sur la conduite à tenir." },
+        },
+        required: ["name", "description", "warning"]
+    };
+
+    try {
+        const response = await ai.models.generateContent({
+            model: model,
+            contents: prompt,
+            config: {
+                responseMimeType: "application/json",
+                responseSchema: {
+                    type: Type.OBJECT,
+                    properties: {
+                        common: { type: Type.ARRAY, items: sideEffectSchema, description: "Liste des effets secondaires courants." },
+                        rare: { type: Type.ARRAY, items: rareSideEffectSchema, description: "Liste des effets secondaires rares et graves." },
+                    },
+                    required: ["common", "rare"]
+                }
+            }
+        });
+        const jsonString = response.text;
+        return JSON.parse(jsonString) as MedicationSideEffectInfo;
+    } catch (error) {
+        console.error("Error generating medication side effects:", error);
+        throw new Error("Impossible de récupérer les informations sur les effets secondaires pour ce médicament.");
+    }
 }
