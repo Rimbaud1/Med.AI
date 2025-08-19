@@ -47,6 +47,7 @@ import AddMedicationScreen from './components/screens/AddMedicationScreen';
 import MedicationDetailScreen from './components/screens/MedicationDetailScreen';
 import TrainingScreen from './components/screens/TrainingScreen';
 import ProtectScreen from './components/screens/training/ProtectScreen';
+import AlertScreen from './components/screens/training/AlertScreen';
 import CrosswordScreen from './components/screens/CrosswordScreen';
 
 const App: React.FC = () => {
@@ -293,12 +294,21 @@ const App: React.FC = () => {
     setAppState(AppState.TRAINING_PROTECT);
   }, []);
   
+  const handleNavigateToTrainingAlert = useCallback(() => {
+    setAppState(AppState.TRAINING_ALERT);
+  }, []);
+
   const handleNavigateToCrossword = useCallback(() => {
     setAppState(AppState.CROSSWORD);
   }, []);
 
   const handleCompleteProtectSection = useCallback(() => {
     setTrainingProgress(prev => ({ ...prev, protect: true }));
+    setAppState(AppState.TRAINING);
+  }, []);
+
+  const handleCompleteAlertSection = useCallback(() => {
+    setTrainingProgress(prev => ({ ...prev, alert: true }));
     setAppState(AppState.TRAINING);
   }, []);
 
@@ -1217,9 +1227,11 @@ const App: React.FC = () => {
         const activeMed = pillboxData.find(m => m.id === activeMedicationId);
         return activeMed ? <MedicationDetailScreen medication={activeMed} onUpdateSideEffectNotes={handleUpdateSideEffectNotes} onBack={handleGoToPillbox} /> : null;
       case AppState.TRAINING:
-        return <TrainingScreen onBackToLanding={resetState} onNavigateToTrainingProtect={handleNavigateToTrainingProtect} trainingProgress={trainingProgress} />;
+        return <TrainingScreen onBackToLanding={resetState} onNavigateToTrainingProtect={handleNavigateToTrainingProtect} onNavigateToTrainingAlert={handleNavigateToTrainingAlert} trainingProgress={trainingProgress} />;
       case AppState.TRAINING_PROTECT:
         return <ProtectScreen onComplete={handleCompleteProtectSection} onBack={handleNavigateToTraining} />;
+      case AppState.TRAINING_ALERT:
+        return <AlertScreen onComplete={handleCompleteAlertSection} onBack={handleNavigateToTraining} />;
       case AppState.CROSSWORD:
         return <CrosswordScreen onBack={resetState} />;
       case AppState.ERROR:

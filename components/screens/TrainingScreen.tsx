@@ -7,6 +7,7 @@ import type { TrainingProgress } from '../../types';
 interface TrainingScreenProps {
   onBackToLanding: () => void;
   onNavigateToTrainingProtect: () => void;
+  onNavigateToTrainingAlert: () => void;
   trainingProgress: TrainingProgress;
 }
 
@@ -28,7 +29,7 @@ const Bubble: React.FC<{ title: string; subtitle: string; icon: React.ReactNode;
     </div>
 );
 
-const TrainingScreen: React.FC<TrainingScreenProps> = ({ onBackToLanding, onNavigateToTrainingProtect, trainingProgress }) => {
+const TrainingScreen: React.FC<TrainingScreenProps> = ({ onBackToLanding, onNavigateToTrainingProtect, onNavigateToTrainingAlert, trainingProgress }) => {
     return (
         <div className="w-full max-w-5xl mx-auto p-4 md:p-8">
             <div className="flex flex-col items-center text-center gap-4 mb-12">
@@ -43,7 +44,7 @@ const TrainingScreen: React.FC<TrainingScreenProps> = ({ onBackToLanding, onNavi
             
             <div className="flex flex-wrap justify-center gap-6 mb-12">
                 <Bubble title="Protéger" subtitle="La scène de l'accident" icon={<ShieldCheckIcon className="h-10 w-10 text-sky-400" />} onClick={onNavigateToTrainingProtect} completed={trainingProgress.protect} />
-                <Bubble title="Alerter" subtitle="Le message d'alerte parfait" icon={<SpeakerWaveIcon className="h-10 w-10 text-sky-400" />} completed={trainingProgress.alert} />
+                <Bubble title="Alerter" subtitle="Le message d'alerte parfait" icon={<SpeakerWaveIcon className="h-10 w-10 text-sky-400" />} onClick={onNavigateToTrainingAlert} completed={trainingProgress.alert} />
                 <Bubble title="Secourir" subtitle="Étouffement, Hémorragie, etc." icon={<HeartIcon className="h-10 w-10 text-sky-400" />} completed={trainingProgress.rescue} />
             </div>
 

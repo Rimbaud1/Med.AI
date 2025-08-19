@@ -1283,20 +1283,28 @@ export async function generateMedicationSideEffects(medicationName: string): Pro
     }
 }
 
-export async function generateTrainingScenarios(topic: 'protect'): Promise<TrainingScenario[]> {
+export async function generateTrainingScenarios(topic: 'protect' | 'alert'): Promise<TrainingScenario[]> {
     const ai = getClient();
     const model = 'gemini-2.5-flash';
+
+    let topicInstruction = '';
+    if (topic === 'protect') {
+        topicInstruction = `Pour le thème 'protect', les scénarios doivent tester la règle d'or "la sécurité du sauveteur d'abord" dans diverses situations (danger électrique, circulation, incendie, etc.).`;
+    } else if (topic === 'alert') {
+        topicInstruction = `Pour le thème 'alert', les scénarios doivent tester la capacité de l'utilisateur à donner une alerte claire, concise et complète aux services d'urgence (SAMU - 15, Pompiers - 18). Les questions doivent porter sur l'ordre des informations (localisation d'abord), la précision des détails (adresse, état de la victime), le choix du bon numéro, et le comportement à adopter (ne pas raccrocher).`;
+    }
+
     const systemInstruction = `Tu es un formateur en premiers secours. Génère une série de 5 scénarios interactifs uniques pour un utilisateur qui apprend la théorie sur le thème '${topic}'.
-    Chaque scénario doit être réaliste, se concentrer sur la prise de décision, et couvrir un aspect différent du thème (ex: danger électrique, circulation, incendie, etc.).
+    Chaque scénario doit être réaliste et se concentrer sur la prise de décision.
     La structure de la réponse doit être un tableau JSON de 5 objets 'scénario'.
     
     Pour chaque scénario, la structure DOIT contenir :
-    1.  'description': Une mise en situation claire et unique.
-    2.  'questions': Un tableau contenant 1 ou 2 questions à choix multiples. Chaque question a 3-4 choix.
-    3.  Chaque 'choice' doit avoir 'text', 'isCorrect' (booléen), et 'feedback' (une explication de pourquoi la réponse est bonne ou mauvaise).
-    4.  'debrief': Un message final qui résume la leçon clé du scénario.
+    1. 'description': Une mise en situation claire et unique.
+    2. 'questions': Un tableau contenant 1 ou 2 questions à choix multiples. Chaque question a 3-4 choix.
+    3. Chaque 'choice' doit avoir 'text', 'isCorrect' (booléen), et 'feedback' (une explication de pourquoi la réponse est bonne ou mauvaise).
+    4. 'debrief': Un message final qui résume la leçon clé du scénario.
     
-    Pour le thème 'protect', les scénarios doivent tester la règle d'or "la sécurité du sauveteur d'abord" dans diverses situations.`;
+    ${topicInstruction}`;
 
     try {
         const response = await ai.models.generateContent({
