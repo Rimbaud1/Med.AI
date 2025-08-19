@@ -2,11 +2,24 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import type { Question, ReportData, Answer, PatientContext, PossibleIssue, SymptomIntensity, PreQuestionnaireAnswer, SymptomCharacteristics, AppointmentPrepData, ScenarioData, PreventionProfile, PreventionPlanData, NeuroTest, StabilityTestResult, CapillaryRefillTimeResult, SpeechDyspneaResult } from '../types';
 
-if (!process.env.API_KEY) {
-  throw new Error("API_KEY environment variable is not set");
+let _ai: GoogleGenAI | null = null;
+
+export function initializeAi(apiKey: string) {
+    _ai = new GoogleGenAI({ apiKey });
 }
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+function getClient(): GoogleGenAI {
+    if (_ai) {
+        return _ai;
+    }
+    if (process.env.API_KEY) {
+        console.warn('AI Client not initialized, falling back to default key.');
+        initializeAi(process.env.API_KEY);
+        return _ai!;
+    }
+    throw new Error("AI Client not initialized and no default API_KEY found.");
+}
+
 
 function formatContext(context: PatientContext): string {
     let contextString = `Contexte du patient:\n`;
@@ -142,6 +155,7 @@ export async function shouldTriggerMemoryTest(
     symptoms: string,
     context: PatientContext
 ): Promise<boolean> {
+    const ai = getClient();
     const model = 'gemini-2.5-flash';
     const prompt = `Analyse les informations patient suivantes. Un test de mémoire à court terme (retenir 3 mots) est-il pertinent ?
     Le test est pertinent en cas de symptômes comme "maux de tête intenses", "commotion", "choc à la tête", "brouillard mental", "confusion", "vertiges", "étourdissements", ou si la personne est âgée et signale une confusion.
@@ -162,6 +176,7 @@ export async function shouldTriggerMemoryTest(
 }
 
 export async function generateMemoryTestWords(): Promise<string[]> {
+    const ai = getClient();
     const model = 'gemini-2.5-flash';
     const prompt = `Génère 3 mots simples, courants et sémantiquement distincts en français pour un test de mémoire. Par exemple: Voiture, Forêt, Jaune. Ne choisis pas des mots qui se suivent logiquement. Retourne uniquement un tableau JSON de 3 chaînes de caractères.`;
     try {
@@ -191,6 +206,7 @@ export async function generateMemoryTestWords(): Promise<string[]> {
 
 
 export async function extractSymptoms(description: string): Promise<string[]> {
+  const ai = getClient();
   const model = 'gemini-2.5-flash';
   const prompt = `Extrais les symptômes médicaux principaux de la description suivante. Retourne uniquement un tableau JSON de chaînes de caractères. Limite à 5 symptômes maximum. Exemple: si la description est "J'ai un mal de gorge terrible, le nez qui coule et une forte fièvre depuis hier", retourne ["Mal de gorge", "Nez qui coule", "Fièvre"].\n\nDescription: "${description}"`;
 
@@ -231,6 +247,7 @@ export async function generateQuestions(
   characteristics: SymptomCharacteristics | null,
   preQuestionnaireAnswers: PreQuestionnaireAnswer[]
 ): Promise<Question[]> {
+  const ai = getClient();
   const model = 'gemini-2.5-flash';
 
   const formattedContext = formatContext(context);
@@ -302,6 +319,7 @@ export async function generateExclusionSymptoms(
   preQuestionnaireAnswers: PreQuestionnaireAnswer[], 
   answers: Answer[]
 ): Promise<string[]> {
+  const ai = getClient();
   const model = 'gemini-2.5-flash';
   
   const prompt = `En te basant sur l'intégralité des informations du patient ci-dessous, génère une liste de 5 à 7 symptômes pertinents pour un diagnostic différentiel, c'est-à-dire des symptômes importants que le patient n'a PAS encore mentionnés mais dont l'absence permettrait d'exclure certaines pathologies. Ne liste que des symptômes qui n'ont pas déjà été confirmés ou infirmés. Retourne uniquement un tableau JSON de chaînes de caractères.
@@ -355,6 +373,7 @@ export async function generateSelfExamPrompt(
   preQuestionnaireAnswers: PreQuestionnaireAnswer[],
   excludedSymptoms: string[]
 ): Promise<string> {
+  const ai = getClient();
   const model = 'gemini-2.5-flash';
   
   const prompt = `
@@ -407,6 +426,7 @@ export async function generateNeuroTests(
   excludedSymptoms: string[],
   selfExamResult: string | null
 ): Promise<string[]> {
+  const ai = getClient();
   const model = 'gemini-2.5-flash';
   
   const prompt = `
@@ -474,6 +494,7 @@ export async function shouldRequestCRT(
     selfExamResult: string | null,
     neuroTestAnswers: NeuroTest[]
 ): Promise<boolean> {
+    const ai = getClient();
     const model = 'gemini-2.5-flash';
     const prompt = `
         Analyse les informations patient suivantes. Est-il pertinent de demander un test de temps de recoloration cutanée (TRC) ?
@@ -515,6 +536,7 @@ export async function shouldRequestRespiratoryRate(
     neuroTestAnswers: NeuroTest[],
     crtResult: CapillaryRefillTimeResult | null
 ): Promise<boolean> {
+    const ai = getClient();
     const model = 'gemini-2.5-flash';
     const prompt = `
         Analyse les informations patient suivantes. Est-il pertinent de demander au patient de mesurer sa fréquence respiratoire ?
@@ -558,6 +580,7 @@ export async function shouldRequestStabilityTest(
     crtResult: CapillaryRefillTimeResult | null,
     respiratoryRate: number | null
 ): Promise<boolean> {
+    const ai = getClient();
     const model = 'gemini-2.5-flash';
     const prompt = `
         Analyse les informations patient suivantes. Est-il pertinent de demander au patient de faire un test de stabilité (se tenir debout pieds joints pendant 15s) ?
@@ -603,6 +626,7 @@ export async function shouldRequestSpeechDyspneaTest(
     respiratoryRate: number | null,
     stabilityTestResult: StabilityTestResult | null
 ): Promise<boolean> {
+    const ai = getClient();
     const model = 'gemini-2.5-flash';
     const prompt = `
         Analyse les informations patient suivantes. Est-il pertinent de demander un test d'essoufflement à la parole ?
@@ -651,6 +675,7 @@ export async function generatePhotoPrompt(
   stabilityTestResult: StabilityTestResult | null,
   speechDyspneaResult: SpeechDyspneaResult | null
 ): Promise<string> {
+  const ai = getClient();
   const model = 'gemini-2.5-flash';
   
   const prompt = `
@@ -715,6 +740,7 @@ export async function generateReport(
   memoryWords: string[] | null,
   memoryResponse: string[] | null
 ): Promise<ReportData> {
+  const ai = getClient();
   const model = 'gemini-2.5-flash';
   
   const systemInstruction = `Tu es Med.AI, un assistant médical IA. Analyse les informations fournies pour générer un rapport de diagnostic préliminaire. Le rapport DOIT être en français et structuré en JSON. Inclus TOUJOURS :
@@ -852,6 +878,7 @@ export async function generateReport(
 }
 
 export async function generateDirectReport(diagnosis: string): Promise<ReportData> {
+  const ai = getClient();
   const model = 'gemini-2.5-flash';
   
   const systemInstruction = `Tu es Med.AI, un assistant médical IA. Un utilisateur déclare avoir le diagnostic suivant : "${diagnosis}".
@@ -917,6 +944,7 @@ export async function generateDirectReport(diagnosis: string): Promise<ReportDat
 }
 
 export async function generateAppointmentPrepData(report: ReportData): Promise<AppointmentPrepData> {
+  const ai = getClient();
   const model = 'gemini-2.5-flash';
 
   const prompt = `
@@ -968,6 +996,7 @@ export async function generateAppointmentPrepData(report: ReportData): Promise<A
 }
 
 export async function generateScenarios(report: ReportData): Promise<ScenarioData> {
+  const ai = getClient();
   const model = 'gemini-2.5-flash';
 
   const prompt = `
@@ -1045,6 +1074,7 @@ function formatPreventionProfile(profile: PreventionProfile): string {
 }
 
 export async function generatePreventionPlan(profile: PreventionProfile): Promise<PreventionPlanData> {
+  const ai = getClient();
   const model = 'gemini-2.5-flash';
   const systemInstruction = `Tu es Med.AI, un assistant de prévention santé. Ton rôle est de générer un plan de prévention personnalisé, proactif et bienveillant basé sur le profil de l'utilisateur. Le plan doit être structuré en JSON et en français.
   

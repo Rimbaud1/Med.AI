@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { AppState } from './types';
 import type { Question, Answer, ReportData, PatientContext, SymptomIntensity, PreQuestionnaireAnswer, SymptomCharacteristics, ChatMessage, AppointmentPrepData, EmpathyLevel, ScenarioData, PreventionProfile, PreventionPlanData, NeuroTest, StabilityTestResult, CapillaryRefillTimeResult, SpeechDyspneaResult, TrackedSymptom, SymptomLogEntry, UserSettings, UserProfileData } from './types';
-import { generateQuestions, generateReport, extractSymptoms, generateExclusionSymptoms, generateSelfExamPrompt, generateNeuroTests, shouldRequestCRT, shouldRequestRespiratoryRate, shouldRequestStabilityTest, shouldRequestSpeechDyspneaTest, generatePhotoPrompt, generateAppointmentPrepData, generateScenarios, generatePreventionPlan, generateDirectReport, shouldTriggerMemoryTest, generateMemoryTestWords } from './services/geminiService';
+import { initializeAi, generateQuestions, generateReport, extractSymptoms, generateExclusionSymptoms, generateSelfExamPrompt, generateNeuroTests, shouldRequestCRT, shouldRequestRespiratoryRate, shouldRequestStabilityTest, shouldRequestSpeechDyspneaTest, generatePhotoPrompt, generateAppointmentPrepData, generateScenarios, generatePreventionPlan, generateDirectReport, shouldTriggerMemoryTest, generateMemoryTestWords } from './services/geminiService';
 import { GoogleGenAI } from "@google/genai";
 import type { Chat } from "@google/genai";
 
@@ -10,6 +10,7 @@ import LandingScreen from './components/screens/LandingScreen';
 import HowItWorksScreen from './components/screens/HowItWorksScreen';
 import EmergencyGuideScreen from './components/screens/EmergencyGuideScreen';
 import SettingsScreen from './components/screens/SettingsScreen';
+import DataPrivacyScreen from './components/screens/DataPrivacyScreen';
 import PreDiagnosisScreen from './components/screens/PreDiagnosisScreen';
 import InitialScreen from './components/screens/InitialScreen';
 import ContextScreen from './components/screens/ContextScreen';
@@ -102,6 +103,7 @@ const App: React.FC = () => {
           allergies: false,
           recentTravels: false,
       },
+      apiKey: undefined,
   });
   const [userProfile, setUserProfile] = useState<UserProfileData | null>(null);
 
@@ -121,13 +123,30 @@ const App: React.FC = () => {
     }
   }, []);
 
-  const handleSettingsChange = useCallback((newSettings: UserSettings) => {
-    setUserSettings(newSettings);
+  // This effect runs on initial load AND every time settings change.
+  // It initializes the AI client and saves settings to localStorage.
+  useEffect(() => {
+    // Initialize the AI client with the current key (or default)
+    if (!process.env.API_KEY) {
+        console.error("Default API_KEY environment variable is not set.");
+        // Potentially show an error to the user if no custom key is set either
+        if (!userSettings.apiKey) {
+            handleError("La clé d'API par défaut n'est pas configurée et aucune clé personnalisée n'a été fournie.");
+        }
+    }
+    initializeAi(userSettings.apiKey || process.env.API_KEY!);
+
+    // Persist settings whenever they change
     try {
-      localStorage.setItem('medai-settings', JSON.stringify(newSettings));
+      localStorage.setItem('medai-settings', JSON.stringify(userSettings));
     } catch (error) {
       console.error("Failed to save settings", error);
     }
+  }, [userSettings]);
+
+
+  const handleSettingsChange = useCallback((newSettings: UserSettings) => {
+    setUserSettings(newSettings);
   }, []);
 
   const clearJournal = useCallback(() => {
@@ -142,6 +161,7 @@ const App: React.FC = () => {
   const clearProfile = useCallback(() => {
     setUserProfile(null);
     const clearedSettings: UserSettings = {
+      ...userSettings,
       saveProfileData: {
         sexAndAge: false, weight: false, location: false, existingConditions: false,
         currentMedications: false, allergies: false, recentTravels: false,
@@ -153,7 +173,7 @@ const App: React.FC = () => {
     } catch (error) {
       console.error("Failed to clear profile data", error);
     }
-  }, [handleSettingsChange]);
+  }, [handleSettingsChange, userSettings]);
 
 
   // Save journal to localStorage whenever it changes
@@ -189,6 +209,10 @@ const App: React.FC = () => {
   
   const handleNavigateToSettings = useCallback(() => {
     setAppState(AppState.SETTINGS);
+  }, []);
+
+  const handleNavigateToDataPrivacy = useCallback(() => {
+    setAppState(AppState.DATA_PRIVACY_EXPLANATION);
   }, []);
 
   const handleNavigateToPreventionPlan = useCallback(() => {
@@ -646,7 +670,7 @@ const App: React.FC = () => {
     setIsChatResponding(true);
     setChatHistory([]); // Clear history for the new session
 
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const ai = new GoogleGenAI({ apiKey: userSettings.apiKey || process.env.API_KEY! });
     const systemInstruction = getSystemInstructionForEmpathy(level, report);
     
     const chat = ai.chats.create({
@@ -680,7 +704,7 @@ const App: React.FC = () => {
     } finally {
         setIsChatResponding(false);
     }
-  }, [report, handleError]);
+  }, [report, handleError, userSettings.apiKey]);
   
   const handleEmpathyLevelChange = useCallback(async (level: EmpathyLevel) => {
       setEmpathyLevel(level);
@@ -870,7 +894,9 @@ const App: React.FC = () => {
       case AppState.EMERGENCY_GUIDE:
         return <EmergencyGuideScreen onBack={() => setAppState(AppState.LANDING)} />;
       case AppState.SETTINGS:
-        return <SettingsScreen onBackToLanding={resetApp} settings={userSettings} onSettingsChange={handleSettingsChange} journalData={journalData} onClearJournal={clearJournal} onClearProfile={clearProfile} />;
+        return <SettingsScreen onBackToLanding={resetApp} settings={userSettings} onSettingsChange={handleSettingsChange} journalData={journalData} onClearJournal={clearJournal} onClearProfile={clearProfile} onShowDataPrivacy={handleNavigateToDataPrivacy} />;
+      case AppState.DATA_PRIVACY_EXPLANATION:
+        return <DataPrivacyScreen onBack={() => setAppState(AppState.SETTINGS)} />;
       case AppState.PRE_DIAGNOSIS:
         return <PreDiagnosisScreen onContinue={handlePreDiagnosisContinue} />;
       case AppState.INITIAL:

@@ -5,6 +5,8 @@
 
 **Disclaimer:** Med.AI is an informational tool and not a substitute for professional medical advice, diagnosis, or treatment. Always seek the advice of a physician or other qualified health provider with any questions you may have regarding a medical condition. In case of a medical emergency, call your local emergency number immediately.
 
+**Open Source:** For complete transparency, the entire source code for Med.AI is available on GitHub. You can audit, review, and contribute to the project here: [https://github.com/Rimbaud1/Med.AI](https://github.com/Rimbaud1/Med.AI)
+
 ---
 
 ## ✨ Key Features

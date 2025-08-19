@@ -5,6 +5,7 @@ export enum AppState {
   HOW_IT_WORKS,
   EMERGENCY_GUIDE,
   SETTINGS,
+  DATA_PRIVACY_EXPLANATION,
   PRE_DIAGNOSIS,
   INITIAL,
   CONTEXT_GATHERING,
@@ -210,6 +211,7 @@ export interface UserSettings {
     allergies: boolean;
     recentTravels: boolean;
   };
+  apiKey?: string;
 }
 
 export type UserProfileData = Partial<Omit<PatientContext, 'age'> & { age: string }>;

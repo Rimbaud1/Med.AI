@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import type { UserSettings, TrackedSymptom } from '../../types';
-import { Cog6ToothIcon } from '../icons';
+import { Cog6ToothIcon, InformationCircleIcon } from '../icons';
 
 interface SettingsScreenProps {
   onBackToLanding: () => void;
@@ -9,6 +9,7 @@ interface SettingsScreenProps {
   journalData: TrackedSymptom[];
   onClearJournal: () => void;
   onClearProfile: () => void;
+  onShowDataPrivacy: () => void;
 }
 
 const Toggle: React.FC<{
@@ -41,7 +42,14 @@ const Toggle: React.FC<{
   </div>
 );
 
-const SettingsScreen: React.FC<SettingsScreenProps> = ({ onBackToLanding, settings, onSettingsChange, journalData, onClearJournal, onClearProfile }) => {
+const SettingsScreen: React.FC<SettingsScreenProps> = ({ onBackToLanding, settings, onSettingsChange, journalData, onClearJournal, onClearProfile, onShowDataPrivacy }) => {
+  const [apiKeyInput, setApiKeyInput] = useState('');
+  const [apiKeySaveStatus, setApiKeySaveStatus] = useState<'idle' | 'saved'>('idle');
+
+  useEffect(() => {
+    setApiKeyInput(settings.apiKey || '');
+  }, [settings.apiKey]);
+  
   const handleToggleChange = (key: keyof UserSettings['saveProfileData'], value: boolean) => {
     const newSettings = {
       ...settings,
@@ -65,6 +73,41 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ onBackToLanding, settin
     }
   }
 
+  const handleSelectAll = () => {
+    const allEnabled = Object.keys(settings.saveProfileData).reduce((acc, key) => {
+        acc[key as keyof UserSettings['saveProfileData']] = true;
+        return acc;
+    }, {} as UserSettings['saveProfileData']);
+    onSettingsChange({ ...settings, saveProfileData: allEnabled });
+  };
+
+  const handleDeselectAll = () => {
+    const allDisabled = Object.keys(settings.saveProfileData).reduce((acc, key) => {
+        acc[key as keyof UserSettings['saveProfileData']] = false;
+        return acc;
+    }, {} as UserSettings['saveProfileData']);
+    onSettingsChange({ ...settings, saveProfileData: allDisabled });
+  };
+  
+  const handleApiKeySave = () => {
+    const newSettings = {
+        ...settings,
+        apiKey: apiKeyInput.trim() || undefined,
+    };
+    onSettingsChange(newSettings);
+    setApiKeySaveStatus('saved');
+    setTimeout(() => setApiKeySaveStatus('idle'), 2000);
+  };
+
+  const handleClearApiKey = () => {
+    setApiKeyInput('');
+    const newSettings = {
+        ...settings,
+        apiKey: undefined,
+    };
+    onSettingsChange(newSettings);
+  };
+
   const journalEntryCount = journalData.reduce((acc, symptom) => acc + symptom.logs.length, 0);
 
   return (
@@ -80,9 +123,43 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ onBackToLanding, settin
       </div>
 
       <div className="space-y-8">
+        {/* API Key Section */}
+        <section>
+            <h2 className="text-2xl font-semibold text-slate-200 mb-4 pb-2 border-b border-slate-700">Clé d'API Gemini</h2>
+            <p className="text-slate-400 text-sm mb-4">
+                Pour une confidentialité maximale, vous pouvez utiliser votre propre clé d'API Google Cloud. Si ce champ est vide, l'application utilisera une clé de démonstration par défaut.
+                <button onClick={onShowDataPrivacy} className="ml-1 text-sky-400 hover:text-sky-300 font-semibold">(En savoir plus sur la confidentialité)</button>
+            </p>
+            <div className="p-4 rounded-lg bg-slate-800/60 border border-slate-700/80 space-y-3">
+                <label htmlFor="api-key-input" className="font-semibold text-slate-200">Votre clé d'API</label>
+                <input
+                    id="api-key-input"
+                    type="password"
+                    value={apiKeyInput}
+                    onChange={e => setApiKeyInput(e.target.value)}
+                    placeholder="Entrez votre clé d'API ici"
+                    className="w-full p-2 rounded-md bg-slate-700 border border-slate-600 focus:ring-2 focus:ring-sky-500 focus:outline-none transition duration-200 text-slate-200"
+                />
+                <div className="flex flex-col sm:flex-row gap-2">
+                    <button onClick={handleApiKeySave} className="w-full sm:w-auto flex-grow bg-sky-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-sky-500 transition-colors">
+                        {apiKeySaveStatus === 'saved' ? 'Enregistré !' : 'Enregistrer la clé'}
+                    </button>
+                    <button onClick={handleClearApiKey} className="w-full sm:w-auto bg-slate-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-slate-500 transition-colors">
+                        Utiliser la clé par défaut
+                    </button>
+                </div>
+            </div>
+        </section>
+
         {/* Data Preferences Section */}
         <section>
-          <h2 className="text-2xl font-semibold text-slate-200 mb-4 pb-2 border-b border-slate-700">Préférences de Données</h2>
+          <div className="flex flex-col sm:flex-row justify-between items-center mb-4 pb-2 border-b border-slate-700">
+            <h2 className="text-2xl font-semibold text-slate-200 mb-2 sm:mb-0">Préférences de Données</h2>
+            <div className="flex gap-2">
+                <button onClick={handleSelectAll} className="text-xs bg-slate-700 hover:bg-slate-600 text-slate-200 font-semibold py-1 px-3 rounded-md transition-colors">Tout sélectionner</button>
+                <button onClick={handleDeselectAll} className="text-xs bg-slate-700 hover:bg-slate-600 text-slate-200 font-semibold py-1 px-3 rounded-md transition-colors">Tout désélectionner</button>
+            </div>
+          </div>
           <p className="text-slate-400 text-sm mb-4">
             Activez ces options pour que Med.AI sauvegarde localement certaines informations afin de pré-remplir les formulaires lors de vos prochains diagnostics.
           </p>
@@ -100,9 +177,13 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ onBackToLanding, settin
         {/* Storage Management Section */}
         <section>
           <h2 className="text-2xl font-semibold text-slate-200 mb-4 pb-2 border-b border-slate-700">Gestion du Stockage</h2>
-          <p className="text-slate-400 text-sm mb-4">
-            Toutes vos données sont stockées uniquement sur cet appareil, dans ce navigateur.
-          </p>
+          <div className="text-slate-400 text-sm mb-4">
+            <p>Toutes vos données sont stockées uniquement sur cet appareil, dans ce navigateur.</p>
+            <button onClick={onShowDataPrivacy} className="mt-2 flex items-center gap-1 text-sky-400 hover:text-sky-300 transition-colors font-semibold">
+                <InformationCircleIcon className="h-4 w-4" />
+                <span>Explication technique sur le stockage des données</span>
+            </button>
+          </div>
           <div className="space-y-4">
              <div className="p-4 rounded-lg bg-slate-800/60 border border-slate-700/80 flex flex-col sm:flex-row items-center justify-between gap-4">
                 <div>
