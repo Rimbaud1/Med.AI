@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import type { CapillaryRefillTimeResult } from '../../types';
 import { HandThumbUpIcon } from '../icons';
@@ -11,7 +10,7 @@ interface CRTScreenProps {
 const CRTScreen: React.FC<CRTScreenProps> = ({ onSubmit, onSkip }) => {
   const [status, setStatus] = useState<'idle' | 'pressing' | 'finished'>('idle');
   const [pressTimer, setPressTimer] = useState(5);
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const testResults: CapillaryRefillTimeResult[] = [
     'Moins de 2 secondes (Normal)',

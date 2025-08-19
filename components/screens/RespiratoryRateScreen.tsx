@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { LungIcon } from '../icons';
 
@@ -11,7 +10,7 @@ const RespiratoryRateScreen: React.FC<RespiratoryRateScreenProps> = ({ onSubmit 
   const [countdown, setCountdown] = useState(3);
   const [timer, setTimer] = useState(30);
   const [breathCount, setBreathCount] = useState<string>('');
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     if (status === 'countdown' && countdown > 0) {

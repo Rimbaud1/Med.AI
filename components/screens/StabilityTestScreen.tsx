@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import type { StabilityTestResult } from '../../types';
 import { ScaleIcon } from '../icons';
@@ -12,7 +11,7 @@ const StabilityTestScreen: React.FC<StabilityTestScreenProps> = ({ onSubmit, onS
   const [status, setStatus] = useState<'idle' | 'countdown' | 'running' | 'finished'>('idle');
   const [countdown, setCountdown] = useState(3);
   const [timer, setTimer] = useState(15);
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const testResults: StabilityTestResult[] = [
     'Parfaitement stable',
