@@ -34,6 +34,8 @@ export enum AppState {
   GENERATING_DIRECT_REPORT,
   SYMPTOM_MONITORING,
   REPORT,
+  SYMPTOM_JOURNAL_SETUP,
+  SYMPTOM_JOURNAL,
   DIAGNOSTIC_SUMMARY,
   PSYCHOLOGICAL_SUPPORT,
   GENERATING_APPOINTMENT_PREP,
@@ -181,4 +183,16 @@ export type StabilityTestResult = 'Parfaitement stable' | 'Légère oscillation,
 export interface SpeechDyspneaResult {
   wordsRead: number;
   totalWords: number;
+}
+
+// Types for Symptom Journal
+export interface SymptomLogEntry {
+  date: string; // ISO string for date YYYY-MM-DD
+  intensity: number; // 1-10
+  notes?: string;
+}
+
+export interface TrackedSymptom {
+  name: string;
+  logs: SymptomLogEntry[];
 }

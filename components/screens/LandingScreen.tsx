@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { StethoscopeIcon, ClipboardDocumentCheckIcon, ShieldExclamationIcon, ShieldCheckIcon, BeakerIcon, InformationCircleIcon } from '../icons';
+import { StethoscopeIcon, ClipboardDocumentCheckIcon, ShieldExclamationIcon, ShieldCheckIcon, BeakerIcon, InformationCircleIcon, BookOpenIcon } from '../icons';
 
 interface LandingScreenProps {
   onStartDiagnosis: () => void;
@@ -8,9 +8,11 @@ interface LandingScreenProps {
   onStartPreventionPlan: () => void;
   onDirectDiagnosisSubmit: (diagnosis: string) => void;
   onShowHowItWorks: () => void;
+  hasJournalData: boolean;
+  onGoToJournal: () => void;
 }
 
-const LandingScreen: React.FC<LandingScreenProps> = ({ onStartDiagnosis, onEmergency, onStartPreventionPlan, onDirectDiagnosisSubmit, onShowHowItWorks }) => {
+const LandingScreen: React.FC<LandingScreenProps> = ({ onStartDiagnosis, onEmergency, onStartPreventionPlan, onDirectDiagnosisSubmit, onShowHowItWorks, hasJournalData, onGoToJournal }) => {
   const [directDiagnosis, setDirectDiagnosis] = useState('');
 
   const handleDirectSubmit = (e: React.FormEvent) => {
@@ -101,6 +103,30 @@ const LandingScreen: React.FC<LandingScreenProps> = ({ onStartDiagnosis, onEmerg
             Démarrer
           </span>
         </div>
+
+        {/* Symptom Journal Card */}
+        {hasJournalData && (
+          <div 
+            className="bg-slate-800/70 p-6 md:p-8 rounded-xl border border-slate-700 hover:border-purple-500 hover:bg-slate-800 transition-all duration-300 flex flex-col md:flex-row text-center md:text-left items-center cursor-pointer group"
+            onClick={onGoToJournal}
+            role="button"
+            tabIndex={0}
+            aria-label="Accéder à mon journal de santé"
+          >
+            <div className="flex-shrink-0 bg-purple-500/10 p-4 rounded-full mb-4 md:mb-0 md:mr-6 border border-purple-500/30 transition-colors duration-300 group-hover:bg-purple-500/20">
+              <BookOpenIcon className="h-10 w-10 text-purple-400" />
+            </div>
+            <div className="flex-grow">
+              <h2 className="text-2xl font-bold text-slate-100">Mon Journal de Santé</h2>
+              <p className="mt-2 text-slate-400">
+                Consultez et mettez à jour le suivi de vos symptômes.
+              </p>
+            </div>
+            <span className="mt-6 md:mt-0 md:ml-auto md:ml-6 whitespace-nowrap bg-purple-600 text-white font-bold py-2 px-6 rounded-lg group-hover:bg-purple-500 transition-colors duration-300">
+              Ouvrir
+            </span>
+          </div>
+        )}
       </div>
       
       <div className="w-full mt-10 pt-8 border-t border-slate-700/80">

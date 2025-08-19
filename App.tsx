@@ -1,7 +1,7 @@
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { AppState } from './types';
-import type { Question, Answer, ReportData, PatientContext, SymptomIntensity, PreQuestionnaireAnswer, SymptomCharacteristics, ChatMessage, AppointmentPrepData, EmpathyLevel, ScenarioData, PreventionProfile, PreventionPlanData, NeuroTest, StabilityTestResult, CapillaryRefillTimeResult, SpeechDyspneaResult } from './types';
+import type { Question, Answer, ReportData, PatientContext, SymptomIntensity, PreQuestionnaireAnswer, SymptomCharacteristics, ChatMessage, AppointmentPrepData, EmpathyLevel, ScenarioData, PreventionProfile, PreventionPlanData, NeuroTest, StabilityTestResult, CapillaryRefillTimeResult, SpeechDyspneaResult, TrackedSymptom, SymptomLogEntry } from './types';
 import { generateQuestions, generateReport, extractSymptoms, generateExclusionSymptoms, generateSelfExamPrompt, generateNeuroTests, shouldRequestCRT, shouldRequestRespiratoryRate, shouldRequestStabilityTest, shouldRequestSpeechDyspneaTest, generatePhotoPrompt, generateAppointmentPrepData, generateScenarios, generatePreventionPlan, generateDirectReport, shouldTriggerMemoryTest, generateMemoryTestWords } from './services/geminiService';
 import { GoogleGenAI } from "@google/genai";
 import type { Chat } from "@google/genai";
@@ -37,6 +37,8 @@ import MedicalAppointmentPrepScreen from './components/screens/MedicalAppointmen
 import ScenarioSimulatorScreen from './components/screens/ScenarioSimulatorScreen';
 import PreventionProfileScreen from './components/screens/PreventionProfileScreen';
 import PreventionPlanReportScreen from './components/screens/PreventionPlanReportScreen';
+import SymptomJournalSetupScreen from './components/screens/SymptomJournalSetupScreen';
+import SymptomJournalScreen from './components/screens/SymptomJournalScreen';
 
 const App: React.FC = () => {
   const [appState, setAppState] = useState<AppState>(AppState.LANDING);
@@ -85,6 +87,34 @@ const App: React.FC = () => {
   const [isChatResponding, setIsChatResponding] = useState(false);
   const [empathyLevel, setEmpathyLevel] = useState<EmpathyLevel>('Empathique');
   
+  // Symptom Journal state
+  const [symptomsToTrackSetup, setSymptomsToTrackSetup] = useState<string[]>([]);
+  const [journalData, setJournalData] = useState<TrackedSymptom[]>([]);
+
+  // Load journal from localStorage on initial mount
+  useEffect(() => {
+    try {
+      const savedJournal = localStorage.getItem('medai-journal');
+      if (savedJournal) {
+        setJournalData(JSON.parse(savedJournal));
+      }
+    } catch (error) {
+      console.error("Failed to load journal data from localStorage", error);
+    }
+  }, []);
+
+  // Save journal to localStorage whenever it changes
+  useEffect(() => {
+    try {
+      if (journalData.length > 0) {
+        localStorage.setItem('medai-journal', JSON.stringify(journalData));
+      }
+    } catch (error) {
+      console.error("Failed to save journal data to localStorage", error);
+    }
+  }, [journalData]);
+
+
   const handleError = useCallback((errorMessage: string) => {
     setError(errorMessage);
     setAppState(AppState.ERROR);
@@ -661,6 +691,49 @@ const App: React.FC = () => {
     }
   }, [handleError]);
 
+  const handleStartTracking = useCallback((symptoms: string[]) => {
+    setSymptomsToTrackSetup(symptoms);
+    setAppState(AppState.SYMPTOM_JOURNAL_SETUP);
+  }, []);
+
+  const handleJournalSetupComplete = useCallback((symptomsToTrack: string[]) => {
+    setJournalData(prevData => {
+      const newData = [...prevData];
+      symptomsToTrack.forEach(symptomName => {
+        if (!newData.some(s => s.name === symptomName)) {
+          newData.push({ name: symptomName, logs: [] });
+        }
+      });
+      return newData;
+    });
+    setAppState(AppState.SYMPTOM_JOURNAL);
+  }, []);
+
+  const handleGoToJournal = useCallback(() => {
+    setAppState(AppState.SYMPTOM_JOURNAL);
+  }, []);
+
+  const handleAddJournalEntry = useCallback((symptomName: string, entry: Omit<SymptomLogEntry, 'date'>) => {
+    const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+    setJournalData(prevData => {
+      return prevData.map(symptom => {
+        if (symptom.name === symptomName) {
+          const existingEntryIndex = symptom.logs.findIndex(log => log.date === today);
+          const newLogs = [...symptom.logs];
+          const newEntry = { ...entry, date: today };
+          if (existingEntryIndex > -1) {
+            newLogs[existingEntryIndex] = newEntry;
+          } else {
+            newLogs.push(newEntry);
+            newLogs.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+          }
+          return { ...symptom, logs: newLogs };
+        }
+        return symptom;
+      });
+    });
+  }, []);
+
 
   const resetApp = () => {
     setAppState(AppState.LANDING);
@@ -704,7 +777,7 @@ const App: React.FC = () => {
   const renderContent = () => {
     switch (appState) {
       case AppState.LANDING:
-        return <LandingScreen onStartDiagnosis={handleNavigateToPreDiagnosis} onEmergency={handleNavigateToEmergencyGuide} onStartPreventionPlan={handleNavigateToPreventionPlan} onDirectDiagnosisSubmit={handleDirectDiagnosisSubmit} onShowHowItWorks={handleNavigateToHowItWorks} />;
+        return <LandingScreen onStartDiagnosis={handleNavigateToPreDiagnosis} onEmergency={handleNavigateToEmergencyGuide} onStartPreventionPlan={handleNavigateToPreventionPlan} onDirectDiagnosisSubmit={handleDirectDiagnosisSubmit} onShowHowItWorks={handleNavigateToHowItWorks} hasJournalData={journalData.length > 0} onGoToJournal={handleGoToJournal} />;
       case AppState.HOW_IT_WORKS:
         return <HowItWorksScreen onBackToLanding={resetApp} />;
       case AppState.EMERGENCY_GUIDE:
@@ -793,8 +866,13 @@ const App: React.FC = () => {
             onGoToSummary={handleGoToSummary}
             onGoToAppointmentPrep={handleGoToAppointmentPrep}
             onGoToScenarioSimulator={handleGoToScenarioSimulator}
+            onStartTracking={handleStartTracking}
             isDirectFlow={isDirectFlow}
         />;
+      case AppState.SYMPTOM_JOURNAL_SETUP:
+        return <SymptomJournalSetupScreen suggestedSymptoms={symptomsToTrackSetup} onSubmit={handleJournalSetupComplete} onBackToReport={handleBackToReport} />;
+      case AppState.SYMPTOM_JOURNAL:
+        return <SymptomJournalScreen journalData={journalData} onAddEntry={handleAddJournalEntry} onBackToLanding={resetApp} />;
       case AppState.DIAGNOSTIC_SUMMARY:
         if (!patientContext || !report) return <ErrorScreen message="Les données du récapitulatif sont manquantes." onRetry={resetApp} />;
         return <DiagnosticSummaryScreen 
@@ -848,7 +926,7 @@ const App: React.FC = () => {
       case AppState.ERROR:
         return <ErrorScreen message={error || "Une erreur inconnue est survenue."} onRetry={resetApp} />;
       default:
-        return <LandingScreen onStartDiagnosis={handleNavigateToPreDiagnosis} onEmergency={handleNavigateToEmergencyGuide} onStartPreventionPlan={handleNavigateToPreventionPlan} onDirectDiagnosisSubmit={handleDirectDiagnosisSubmit} onShowHowItWorks={handleNavigateToHowItWorks} />;
+        return <LandingScreen onStartDiagnosis={handleNavigateToPreDiagnosis} onEmergency={handleNavigateToEmergencyGuide} onStartPreventionPlan={handleNavigateToPreventionPlan} onDirectDiagnosisSubmit={handleDirectDiagnosisSubmit} onShowHowItWorks={handleNavigateToHowItWorks} hasJournalData={journalData.length > 0} onGoToJournal={handleGoToJournal} />;
     }
   };
 

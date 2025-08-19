@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import type { ReportData, PatientContext } from '../../types';
-import { WarningIcon, PillIcon, ClipboardListIcon, HeartIcon, ChatBubbleLeftRightIcon, DocumentArrowDownIcon, ClipboardIcon, ClipboardDocumentCheckIcon, ArrowTrendingUpIcon, MapPinIcon, CalendarDaysIcon, ClockIcon, AcademicCapIcon, EnvelopeIcon } from '../icons';
+import { WarningIcon, PillIcon, ClipboardListIcon, HeartIcon, ChatBubbleLeftRightIcon, DocumentArrowDownIcon, ClipboardIcon, ClipboardDocumentCheckIcon, ArrowTrendingUpIcon, MapPinIcon, CalendarDaysIcon, ClockIcon, AcademicCapIcon, EnvelopeIcon, ChartBarIcon } from '../icons';
 
 interface ReportScreenProps {
   report: ReportData;
@@ -11,10 +11,11 @@ interface ReportScreenProps {
   onGoToSummary: () => void;
   onGoToAppointmentPrep: () => void;
   onGoToScenarioSimulator: () => void;
+  onStartTracking: (symptoms: string[]) => void;
   isDirectFlow?: boolean;
 }
 
-const ReportScreen: React.FC<ReportScreenProps> = ({ report, patientContext, onReset, onStartSupportChat, onGoToSummary, onGoToAppointmentPrep, onGoToScenarioSimulator, isDirectFlow = false }) => {
+const ReportScreen: React.FC<ReportScreenProps> = ({ report, patientContext, onReset, onStartSupportChat, onGoToSummary, onGoToAppointmentPrep, onGoToScenarioSimulator, onStartTracking, isDirectFlow = false }) => {
   const [copyButtonText, setCopyButtonText] = useState('Copier le résumé');
   const [locationInput, setLocationInput] = useState('');
   const [showExcuseModal, setShowExcuseModal] = useState(false);
@@ -37,6 +38,11 @@ const ReportScreen: React.FC<ReportScreenProps> = ({ report, patientContext, onR
     navigator.clipboard.writeText(excuseText);
     setExcuseCopyText('Copié !');
     setTimeout(() => setExcuseCopyText('Copier le texte'), 2000);
+  };
+
+  const handleStartTrackingClick = () => {
+    const symptoms = report.possibleIssues.map(issue => issue.name);
+    onStartTracking(symptoms);
   };
 
 
@@ -184,11 +190,17 @@ const ReportScreen: React.FC<ReportScreenProps> = ({ report, patientContext, onR
             </button>
             <button
               onClick={onGoToScenarioSimulator}
-              className="md:col-span-2 bg-indigo-600/80 text-white font-bold py-4 px-6 rounded-lg hover:bg-indigo-500/80 transition duration-200 flex items-center justify-center gap-3 text-base sm:text-lg border border-indigo-500"
+              className="bg-indigo-600/80 text-white font-bold py-4 px-6 rounded-lg hover:bg-indigo-500/80 transition duration-200 flex items-center justify-center gap-3 text-base sm:text-lg border border-indigo-500"
             >
               <ArrowTrendingUpIcon className="h-7 w-7" />
               Évolution Possible : Lancer le simulateur
             </button>
+             {!isDirectFlow && (
+              <button onClick={handleStartTrackingClick} className="md:col-span-2 bg-purple-600/80 text-white font-bold py-4 px-6 rounded-lg hover:bg-purple-500/80 transition duration-200 flex items-center justify-center gap-3 text-base sm:text-lg border border-purple-500">
+                  <ChartBarIcon className="h-7 w-7" />
+                  Suivre l'Évolution de mes Symptômes
+              </button>
+            )}
         </div>
       </div>
       

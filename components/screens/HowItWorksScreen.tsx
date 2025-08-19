@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { 
     InformationCircleIcon, 
@@ -21,7 +20,8 @@ import {
     ClipboardListIcon,
     CalendarDaysIcon,
     HandThumbUpIcon,
-    SpeakerWaveIcon
+    SpeakerWaveIcon,
+    BookOpenIcon
 } from '../icons';
 
 interface HowItWorksScreenProps {
@@ -114,6 +114,7 @@ const HowItWorksScreen: React.FC<HowItWorksScreenProps> = ({ onBackToLanding }) 
                                 <li><strong><ClipboardDocumentCheckIcon className="h-5 w-5 inline-block -mt-1 mr-1"/>Préparer ma Consultation :</strong> Pour réduire le stress d'un rdv médical, cet outil génère un <strong>script simple</strong> ("Bonjour Docteur, je viens vous voir car...") que vous pouvez lire, ainsi qu'une liste de <strong>questions probables</strong> que le médecin pourrait vous poser, pour que vous puissiez préparer vos réponses.</li>
                                 <li><strong><ArrowTrendingUpIcon className="h-5 w-5 inline-block -mt-1 mr-1"/>Simulateur d'Évolution :</strong> Une des fonctionnalités les plus puissantes. L'IA projette 3 scénarios pour les 48 prochaines heures : <strong>Favorable, À surveiller, et Inquiétant</strong>. Chaque scénario décrit les signes à observer et l'action à entreprendre, vous transformant en acteur de votre surveillance.</li>
                                 <li><strong><ChatBubbleLeftRightIcon className="h-5 w-5 inline-block -mt-1 mr-1"/>Soutien Psychologique "Aura" :</strong> Discutez de vos résultats et de vos angoisses avec Aura, notre IA conversationnelle. Son originalité : vous pouvez <strong>choisir son niveau d'empathie</strong>, de "Direct" à "Très Empathique", pour un soutien qui s'adapte à votre besoin du moment.</li>
+                                <li><strong><BookOpenIcon className="h-5 w-5 inline-block -mt-1 mr-1 text-purple-400"/>Journal de Symptômes :</strong> Après un diagnostic, Med.AI ne vous laisse pas seul avec un rapport. Il se transforme en partenaire à long terme en vous proposant de suivre l'évolution de vos symptômes principaux. Chaque jour, vous pouvez noter l'intensité de votre fatigue, de vos douleurs, etc., sur une échelle de 1 à 10. L'application génère alors des graphiques clairs, vous permettant, ainsi qu'à votre médecin, de visualiser objectivement l'évolution dans le temps et de juger de l'efficacité d'un traitement.</li>
                            </ul>
                         </FeatureCard>
                      </div>
