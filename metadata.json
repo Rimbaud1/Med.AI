@@ -1,0 +1,8 @@
+{
+  "name": "Med.AI",
+  "description": "An AI-powered medical assistant that helps you run a preliminary diagnosis based on your symptoms through a guided questionnaire.",
+  "requestFramePermissions": [
+    "camera"
+  ],
+  "prompt": ""
+}
