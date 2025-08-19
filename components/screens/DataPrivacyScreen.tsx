@@ -50,11 +50,12 @@ const DataPrivacyScreen: React.FC<DataPrivacyScreenProps> = ({ onBack }) => {
         </Section>
 
         <Section title="2. Données Persistantes (Stockage Local)" icon={<BookOpenIcon className="h-7 w-7 text-purple-400" />}>
-            <p><strong>Qu'est-ce que c'est ?</strong> Ce sont les données que vous choisissez explicitement de conserver pour améliorer votre expérience future. Cela concerne trois fonctionnalités :</p>
+            <p><strong>Qu'est-ce que c'est ?</strong> Ce sont les données que vous choisissez explicitement de conserver pour améliorer votre expérience future. Cela concerne quatre fonctionnalités :</p>
             <ul className="list-disc list-inside pl-4 font-semibold">
                 <li>Le <strong>Profil de Pré-remplissage</strong> (données de contexte)</li>
                 <li>Le <strong>Journal de Santé</strong> (suivi de symptômes : nom, date, intensité, notes)</li>
                 <li>Le <strong>Pilulier Intelligent</strong> (nom du médicament, posologie, durée, suivi des effets)</li>
+                <li>La <strong>Progression de la Formation</strong> (un simple indicateur des modules complétés, ex: <code>{"protect": true}</code>)</li>
             </ul>
             <p><strong>Où sont-elles stockées ?</strong> Dans le <code>localStorage</code> de votre navigateur. C'est un petit espace de stockage (~5-10 Mo) sécurisé, propre à chaque site web, directement sur le disque dur de votre appareil.</p>
             <p><strong>Durée de vie :</strong> Persistante. Ces données restent sur votre appareil même si vous fermez le navigateur, jusqu'à ce que vous décidiez de les supprimer manuellement via l'écran "Paramètres" ou en vidant le cache de votre navigateur pour ce site.</p>
@@ -72,6 +73,7 @@ const DataPrivacyScreen: React.FC<DataPrivacyScreenProps> = ({ onBack }) => {
                 <li>Les données de votre <strong>profil de prévention</strong> pour générer le plan et l'analyse de risques.</li>
                 <li>Les données de votre <strong>journal de santé</strong> lorsque vous demandez une analyse de tendances.</li>
                 <li>Le <strong>nom d'un médicament</strong> lorsque vous demandez une analyse d'effets secondaires.</li>
+                 <li>Le <strong>thème d'un module de formation</strong> (ex: "protéger") pour générer un scénario d'entraînement. Aucune donnée sur votre progression n'est envoyée.</li>
             </ul>
             <div className="mt-4 p-4 rounded-md border border-yellow-500/30 bg-yellow-500/10 text-yellow-200">
                 <p><strong className="font-semibold">Utilisation de la clé par défaut (gratuite) :</strong> Par défaut, Med.AI utilise une clé d'API fournie pour la démonstration. Conformément aux conditions d'utilisation des API gratuites de Google, les données envoyées <strong>peuvent être utilisées</strong> par Google pour améliorer ses modèles d'IA. Bien que les données soient anonymisées, elles ne sont pas considérées comme totalement privées.</p>

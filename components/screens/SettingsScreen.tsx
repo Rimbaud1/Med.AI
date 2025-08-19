@@ -1,7 +1,8 @@
 
+
 import React, { useState, useEffect } from 'react';
-import type { UserSettings, TrackedSymptom, Medication } from '../../types';
-import { Cog6ToothIcon, InformationCircleIcon } from '../icons';
+import type { UserSettings, TrackedSymptom, Medication, TrainingProgress } from '../../types';
+import { Cog6ToothIcon, InformationCircleIcon, CheckCircleIcon } from '../icons';
 
 interface SettingsScreenProps {
   onBackToLanding: () => void;
@@ -9,9 +10,11 @@ interface SettingsScreenProps {
   onSettingsChange: (newSettings: UserSettings) => void;
   journalData: TrackedSymptom[];
   pillboxData: Medication[];
+  trainingProgress: TrainingProgress;
   onClearJournal: () => void;
   onClearPillbox: () => void;
   onClearProfile: () => void;
+  onClearTrainingProgress: () => void;
   onShowDataPrivacy: () => void;
 }
 
@@ -45,7 +48,13 @@ const Toggle: React.FC<{
   </div>
 );
 
-const SettingsScreen: React.FC<SettingsScreenProps> = ({ onBackToLanding, settings, onSettingsChange, journalData, pillboxData, onClearJournal, onClearPillbox, onClearProfile, onShowDataPrivacy }) => {
+const SettingsScreen: React.FC<SettingsScreenProps> = (props) => {
+  const { 
+    onBackToLanding, settings, onSettingsChange, journalData, pillboxData, 
+    trainingProgress, onClearJournal, onClearPillbox, onClearProfile, 
+    onClearTrainingProgress, onShowDataPrivacy 
+  } = props;
+
   const [apiKeyInput, setApiKeyInput] = useState('');
   const [apiKeySaveStatus, setApiKeySaveStatus] = useState<'idle' | 'saved'>('idle');
 
@@ -81,6 +90,13 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ onBackToLanding, settin
       onClearProfile();
     }
   }
+
+  const handleClearTrainingProgress = () => {
+    if(window.confirm("Êtes-vous sûr de vouloir réinitialiser votre progression dans la formation ?")) {
+      onClearTrainingProgress();
+    }
+  };
+
 
   const handleSelectAll = () => {
     const allEnabled = Object.keys(settings.saveProfileData).reduce((acc, key) => {
@@ -219,6 +235,19 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ onBackToLanding, settin
                 </div>
                 <button onClick={handleClearProfile} className="w-full sm:w-auto bg-red-600/80 text-white font-bold py-2 px-4 rounded-lg hover:bg-red-500 transition-colors">
                   Supprimer mon profil
+                </button>
+            </div>
+            <div className="p-4 rounded-lg bg-slate-800/60 border border-slate-700/80 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div>
+                  <h4 className="font-semibold text-slate-200">Progression de Formation</h4>
+                   <div className="text-sm text-slate-400 flex items-center gap-3 mt-1">
+                        <span>Protéger: {trainingProgress.protect ? <CheckCircleIcon className="h-5 w-5 inline text-green-400"/> : 'Non complété'}</span>
+                        <span>Alerter: {trainingProgress.alert ? <CheckCircleIcon className="h-5 w-5 inline text-green-400"/> : 'Non complété'}</span>
+                        <span>Secourir: {trainingProgress.rescue ? <CheckCircleIcon className="h-5 w-5 inline text-green-400"/> : 'Non complété'}</span>
+                   </div>
+                </div>
+                <button onClick={handleClearTrainingProgress} className="w-full sm:w-auto bg-red-600/80 text-white font-bold py-2 px-4 rounded-lg hover:bg-red-500 transition-colors">
+                  Réinitialiser
                 </button>
             </div>
           </div>

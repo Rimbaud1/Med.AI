@@ -232,3 +232,48 @@ export const Cog6ToothIcon: React.FC<{ className?: string }> = ({ className }) =
       <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
     </svg>
 );
+
+export const BoltIcon: React.FC<{ className?: string }> = ({ className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className={className}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="m3.75 13.5 10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75Z" />
+    </svg>
+);
+
+export const FireIcon: React.FC<{ className?: string }> = ({ className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className={className}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M15.362 5.214A8.252 8.252 0 0 1 12 21 8.25 8.25 0 0 1 6.038 7.047 8.287 8.287 0 0 0 9 9.601a8.983 8.983 0 0 1 3.361-6.867 8.21 8.21 0 0 0 3 2.48Z" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 18a3.75 3.75 0 0 0 .495-7.468 3.75 3.75 0 0 0-1.993-2.19c-.317-.123-.67-.207-1.026-.25A3.75 3.75 0 0 0 6 10.5a3.75 3.75 0 0 0 3 3.554c.317.123.67.207 1.026.25a3.75 3.75 0 0 0 2.974-2.582Z" />
+    </svg>
+);
+
+export const TruckIcon: React.FC<{ className?: string }> = ({ className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className={className}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 18.75a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 0 1-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m3 0h1.125c.621 0 1.125-.504 1.125-1.125V14.25m-17.25 4.5v-1.875a3.375 3.375 0 0 1 3.375-3.375h9.75a3.375 3.375 0 0 1 3.375 3.375v1.875M3.375 14.25h17.25M3.375 14.25a3.375 3.375 0 0 1-3.375-3.375V6.375c0-1.09.796-2.043 1.875-2.197a48.455 48.455 0 0 1 6.75 0c1.079.154 1.875 1.107 1.875 2.197v1.875a3.375 3.375 0 0 1-3.375 3.375h-1.5m-3 0h-6m6 0a3.375 3.375 0 0 1-3.375-3.375V6.375m3.375 7.875L9.75 9.375" />
+    </svg>
+);
+
+export const BuildingStorefrontIcon: React.FC<{ className?: string }> = ({ className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className={className}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 21v-7.5A.75.75 0 0 1 15 12.75h.75a.75.75 0 0 1 .75.75v7.5m0 0H18A2.25 2.25 0 0 0 20.25 18v-7.5a2.25 2.25 0 0 0-2.25-2.25H15M13.5 21H3.75A2.25 2.25 0 0 1 1.5 18.75v-7.5A2.25 2.25 0 0 1 3.75 9h7.5a2.25 2.25 0 0 1 2.25 2.25v7.5A2.25 2.25 0 0 1 13.5 21M6 9V6a3 3 0 0 1 3-3h3a3 3 0 0 1 3 3v3" />
+    </svg>
+);
+
+export const SkullIcon: React.FC<{ className?: string }> = ({ className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className={className}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M12 9.75v1.5m-3-1.5v1.5m6-1.5v1.5m-3-4.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0ZM12 9.75a3 3 0 1 1 6 0 3 3 0 0 1-6 0Zm-3 4.5a3 3 0 1 0 0 6 3 3 0 0 0 0-6Zm-3 3a3 3 0 1 1 6 0 3 3 0 0 1-6 0Zm12-3a3 3 0 1 0 0 6 3 3 0 0 0 0-6Zm-3 3a3 3 0 1 1 6 0 3 3 0 0 1-6 0Z" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M16.03 9.36a9 9 0 0 0-8.06 0" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 12.75a9 9 0 0 0-15 0" />
+    </svg>
+);
+
+export const NewspaperIcon: React.FC<{ className?: string }> = ({ className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className={className}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M12 7.5h1.5m-1.5 3h1.5m-7.5 3h7.5m-7.5 3h7.5m3-9h3.375c.621 0 1.125.504 1.125 1.125V18a2.25 2.25 0 0 1-2.25 2.25M16.5 7.5V18a2.25 2.25 0 0 0 2.25 2.25M16.5 7.5V4.875c0-.621-.504-1.125-1.125-1.125H4.125C3.504 3.75 3 4.254 3 4.875V18a2.25 2.25 0 0 0 2.25 2.25h13.5M6 7.5h3v3H6v-3Z" />
+    </svg>
+);
+
+export const UserGroupIcon: React.FC<{ className?: string }> = ({ className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className={className}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M18 18.72a9.094 9.094 0 0 0 3.741-.479 3 3 0 0 0-4.682-2.72m-7.5-2.962c.57-1.023 1.83-1.023 2.4 0m-2.4 0a4.5 4.5 0 0 0-9 0m11.25 0a4.5 4.5 0 0 1-9 0m9 0c-.57 1.023-1.83 1.023-2.4 0m2.4 0a4.5 4.5 0 0 0-9 0m-2.25-4.242a3 3 0 0 0-5.464-1.292 3 3 0 0 0 5.464 1.292zm11.25 0a3 3 0 0 0-5.464-1.292 3 3 0 0 0 5.464 1.292z" />
+    </svg>
+);

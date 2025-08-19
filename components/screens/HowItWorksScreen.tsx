@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { 
     InformationCircleIcon, 
@@ -21,7 +22,8 @@ import {
     CalendarDaysIcon,
     HandThumbUpIcon,
     SpeakerWaveIcon,
-    BookOpenIcon
+    BookOpenIcon,
+    AcademicCapIcon
 } from '../icons';
 
 interface HowItWorksScreenProps {
@@ -138,8 +140,16 @@ const HowItWorksScreen: React.FC<HowItWorksScreenProps> = ({ onBackToLanding }) 
                                 <li><strong>Détection de Tendances Anormales :</strong> À tout moment, demandez à l'IA d'analyser votre journal. Elle peut détecter des corrélations ou des dégradations que vous n'auriez pas vues (ex: "Nous avons remarqué que votre essoufflement augmente en même temps que votre fréquence cardiaque..."). C'est un gardien actif de votre santé.</li>
                            </ul>
                         </FeatureCard>
+                        
+                         <FeatureCard title="Formation Interactive aux Premiers Secours" icon={<AcademicCapIcon className="h-8 w-8 text-sky-400" />}>
+                            <p>Apprenez les gestes qui sauvent grâce à une approche pédagogique unique qui allie théorie et pratique :</p>
+                             <ul className="list-disc list-inside pl-2 space-y-2">
+                                 <li><strong>Cours Théorique :</strong> Des modules visuels et concis vous enseignent les concepts clés (Protéger, Alerter, Secourir) de manière simple et mémorable.</li>
+                                 <li><strong>Scénarios Interactifs par IA :</strong> Après chaque leçon, l'IA vous plonge dans une situation réaliste. Vous devez prendre des décisions cruciales et l'IA vous donne un feedback instantané, transformant la connaissance passive en compétence active. Votre progression est sauvegardée pour un apprentissage à votre rythme.</li>
+                             </ul>
+                        </FeatureCard>
 
-                         <FeatureCard title="Guide d'Urgence et Premiers Secours" icon={<ShieldExclamationIcon className="h-8 w-8 text-sky-400" />}>
+                         <FeatureCard title="Guide d'Urgence" icon={<ShieldExclamationIcon className="h-8 w-8 text-sky-400" />}>
                             <p>La sécurité est notre priorité absolue. Accessible en un clic depuis l'accueil, cette section est votre premier réflexe en cas de doute sur une situation grave. Elle liste les signes d'une urgence vitale (douleur thoracique, difficulté à respirer...) et vous donne un accès direct par des boutons cliquables aux <strong>numéros d'urgence (15, 18, 112)</strong>. En cas d'urgence, c'est la seule page à consulter.</p>
                         </FeatureCard>
                     </div>

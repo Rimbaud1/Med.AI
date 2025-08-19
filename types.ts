@@ -53,6 +53,9 @@ export enum AppState {
   PILLBOX_ADD_MEDICATION,
   GENERATING_SIDE_EFFECTS,
   MEDICATION_DETAIL,
+  TRAINING,
+  TRAINING_PROTECT,
+  CROSSWORD,
   ERROR,
 }
 
@@ -242,6 +245,48 @@ export interface Medication {
   startDate: string; // ISO string 'YYYY-MM-DD'
   sideEffectInfo?: MedicationSideEffectInfo;
   trackedSideEffects?: { date: string; notes: string }[];
+}
+
+// Types for First Aid Training
+export interface TrainingProgress {
+  protect: boolean;
+  alert: boolean;
+  rescue: boolean;
+}
+
+export interface ScenarioChoice {
+    text: string;
+    isCorrect: boolean;
+    feedback: string;
+}
+
+export interface ScenarioQuestion {
+    question: string;
+    choices: ScenarioChoice[];
+}
+
+export interface TrainingScenario {
+    description: string;
+    questions: ScenarioQuestion[];
+    debrief: string;
+}
+
+// Types for Crossword
+export interface CrosswordClue {
+  number: number;
+  clue: string;
+  row: number;
+  col: number;
+}
+
+export interface CrosswordData {
+  theme: string;
+  size: number;
+  grid: (string | null)[][];
+  clues: {
+    across: CrosswordClue[];
+    down: CrosswordClue[];
+  };
 }
 
 

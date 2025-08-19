@@ -1,7 +1,7 @@
 
 
 import { GoogleGenAI, Type } from "@google/genai";
-import type { Question, ReportData, Answer, PatientContext, PossibleIssue, SymptomIntensity, PreQuestionnaireAnswer, SymptomCharacteristics, AppointmentPrepData, ScenarioData, PreventionProfile, PreventionPlanData, NeuroTest, StabilityTestResult, CapillaryRefillTimeResult, SpeechDyspneaResult, MedicationSideEffectInfo, RiskAnalysis, TrackedSymptom, TrendAnalysis } from '../types';
+import type { Question, ReportData, Answer, PatientContext, PossibleIssue, SymptomIntensity, PreQuestionnaireAnswer, SymptomCharacteristics, AppointmentPrepData, ScenarioData, PreventionProfile, PreventionPlanData, NeuroTest, StabilityTestResult, CapillaryRefillTimeResult, SpeechDyspneaResult, MedicationSideEffectInfo, RiskAnalysis, TrackedSymptom, TrendAnalysis, TrainingScenario, CrosswordData } from '../types';
 
 let _ai: GoogleGenAI | null = null;
 
@@ -1280,5 +1280,134 @@ export async function generateMedicationSideEffects(medicationName: string): Pro
     } catch (error) {
         console.error("Error generating medication side effects:", error);
         throw new Error("Impossible de récupérer les informations sur les effets secondaires pour ce médicament.");
+    }
+}
+
+export async function generateTrainingScenarios(topic: 'protect'): Promise<TrainingScenario[]> {
+    const ai = getClient();
+    const model = 'gemini-2.5-flash';
+    const systemInstruction = `Tu es un formateur en premiers secours. Génère une série de 5 scénarios interactifs uniques pour un utilisateur qui apprend la théorie sur le thème '${topic}'.
+    Chaque scénario doit être réaliste, se concentrer sur la prise de décision, et couvrir un aspect différent du thème (ex: danger électrique, circulation, incendie, etc.).
+    La structure de la réponse doit être un tableau JSON de 5 objets 'scénario'.
+    
+    Pour chaque scénario, la structure DOIT contenir :
+    1.  'description': Une mise en situation claire et unique.
+    2.  'questions': Un tableau contenant 1 ou 2 questions à choix multiples. Chaque question a 3-4 choix.
+    3.  Chaque 'choice' doit avoir 'text', 'isCorrect' (booléen), et 'feedback' (une explication de pourquoi la réponse est bonne ou mauvaise).
+    4.  'debrief': Un message final qui résume la leçon clé du scénario.
+    
+    Pour le thème 'protect', les scénarios doivent tester la règle d'or "la sécurité du sauveteur d'abord" dans diverses situations.`;
+
+    try {
+        const response = await ai.models.generateContent({
+            model,
+            contents: `Génère la série de 5 scénarios pour le thème : ${topic}`,
+            config: {
+                systemInstruction,
+                responseMimeType: 'application/json',
+                responseSchema: {
+                    type: Type.ARRAY,
+                    items: {
+                        type: Type.OBJECT,
+                        properties: {
+                            description: { type: Type.STRING },
+                            questions: {
+                                type: Type.ARRAY,
+                                items: {
+                                    type: Type.OBJECT,
+                                    properties: {
+                                        question: { type: Type.STRING },
+                                        choices: {
+                                            type: Type.ARRAY,
+                                            items: {
+                                                type: Type.OBJECT,
+                                                properties: {
+                                                    text: { type: Type.STRING },
+                                                    isCorrect: { type: Type.BOOLEAN },
+                                                    feedback: { type: Type.STRING },
+                                                },
+                                                required: ["text", "isCorrect", "feedback"]
+                                            }
+                                        }
+                                    },
+                                    required: ["question", "choices"]
+                                }
+                            },
+                            debrief: { type: Type.STRING }
+                        },
+                        required: ["description", "questions", "debrief"]
+                    }
+                }
+            }
+        });
+        const jsonString = response.text;
+        return JSON.parse(jsonString) as TrainingScenario[];
+    } catch (error) {
+        console.error("Error generating training scenarios:", error);
+        throw new Error("Impossible de générer les scénarios d'entraînement.");
+    }
+}
+
+export async function generateCrossword(theme: string): Promise<CrosswordData> {
+    const ai = getClient();
+    const model = 'gemini-2.5-flash';
+    const size = 10;
+    const systemInstruction = `You are an expert crossword puzzle creator. Generate a complete crossword puzzle based on the user's theme. The grid must be square and fully functional. Ensure all words are correctly placed and the clues match. The response MUST be a valid JSON object matching the provided schema.`;
+
+    const prompt = `Create a ${size}x${size} crossword puzzle on the theme: "${theme}". The grid should be a 2D array where empty cells for letters are represented by a single uppercase letter, and black squares are represented by the string "#". The clues should be numbered correctly and correspond to the grid layout.`;
+
+    const clueSchema = {
+        type: Type.OBJECT,
+        properties: {
+            number: { type: Type.NUMBER },
+            clue: { type: Type.STRING },
+            row: { type: Type.NUMBER },
+            col: { type: Type.NUMBER },
+        },
+        required: ["number", "clue", "row", "col"]
+    };
+
+    try {
+        const response = await ai.models.generateContent({
+            model,
+            contents: prompt,
+            config: {
+                systemInstruction,
+                responseMimeType: 'application/json',
+                responseSchema: {
+                    type: Type.OBJECT,
+                    properties: {
+                        theme: { type: Type.STRING },
+                        size: { type: Type.NUMBER },
+                        grid: {
+                            type: Type.ARRAY,
+                            items: {
+                                type: Type.ARRAY,
+                                items: { type: Type.STRING } // Represents a letter or "#"
+                            }
+                        },
+                        clues: {
+                            type: Type.OBJECT,
+                            properties: {
+                                across: { type: Type.ARRAY, items: clueSchema },
+                                down: { type: Type.ARRAY, items: clueSchema },
+                            },
+                            required: ["across", "down"]
+                        }
+                    },
+                    required: ["theme", "size", "grid", "clues"]
+                }
+            }
+        });
+        const jsonString = response.text;
+        const data = JSON.parse(jsonString);
+        
+        // Post-process grid to replace "#" with null for easier frontend handling
+        data.grid = data.grid.map((row: string[]) => row.map((cell: string) => cell === '#' ? null : cell));
+
+        return data as CrosswordData;
+    } catch (error) {
+        console.error("Error generating crossword:", error);
+        throw new Error("Impossible de générer des mots croisés pour ce thème. Veuillez essayer un thème plus général.");
     }
 }

@@ -2,8 +2,8 @@
 
 import React, { useState, useCallback, useEffect } from 'react';
 import { AppState } from './types';
-import type { Question, Answer, ReportData, PatientContext, SymptomIntensity, PreQuestionnaireAnswer, SymptomCharacteristics, ChatMessage, AppointmentPrepData, EmpathyLevel, ScenarioData, PreventionProfile, PreventionPlanData, NeuroTest, StabilityTestResult, CapillaryRefillTimeResult, SpeechDyspneaResult, TrackedSymptom, SymptomLogEntry, UserSettings, UserProfileData, Medication, RiskAnalysis, TrendAnalysis } from './types';
-import { initializeAi, generateQuestions, generateReport, extractSymptoms, generateExclusionSymptoms, generateSelfExamPrompt, generateNeuroTests, shouldRequestCRT, shouldRequestRespiratoryRate, shouldRequestStabilityTest, shouldRequestSpeechDyspneaTest, generatePhotoPrompt, generateAppointmentPrepData, generateScenarios, generatePreventionPlan, generateDirectReport, shouldTriggerMemoryTest, generateMemoryTestWords, generateMedicationSideEffects, generateRiskAnalysis, analyzeSymptomTrends } from './services/geminiService';
+import type { Question, Answer, ReportData, PatientContext, SymptomIntensity, PreQuestionnaireAnswer, SymptomCharacteristics, ChatMessage, AppointmentPrepData, EmpathyLevel, ScenarioData, PreventionProfile, PreventionPlanData, NeuroTest, StabilityTestResult, CapillaryRefillTimeResult, SpeechDyspneaResult, TrackedSymptom, SymptomLogEntry, UserSettings, UserProfileData, Medication, RiskAnalysis, TrendAnalysis, TrainingProgress } from './types';
+import { initializeAi, generateQuestions, generateReport, extractSymptoms, generateExclusionSymptoms, generateSelfExamPrompt, generateNeuroTests, shouldRequestCRT, shouldRequestRespiratoryRate, shouldRequestStabilityTest, shouldRequestSpeechDyspneaTest, generatePhotoPrompt, generateAppointmentPrepData, generateScenarios, generatePreventionPlan, generateDirectReport, shouldTriggerMemoryTest, generateMemoryTestWords, generateMedicationSideEffects, generateRiskAnalysis, analyzeSymptomTrends, generateTrainingScenarios } from './services/geminiService';
 import { GoogleGenAI } from "@google/genai";
 import type { Chat } from "@google/genai";
 
@@ -45,6 +45,9 @@ import SymptomJournalScreen from './components/screens/SymptomJournalScreen';
 import PillboxScreen from './components/screens/PillboxScreen';
 import AddMedicationScreen from './components/screens/AddMedicationScreen';
 import MedicationDetailScreen from './components/screens/MedicationDetailScreen';
+import TrainingScreen from './components/screens/TrainingScreen';
+import ProtectScreen from './components/screens/training/ProtectScreen';
+import CrosswordScreen from './components/screens/CrosswordScreen';
 
 const App: React.FC = () => {
   const [appState, setAppState] = useState<AppState>(AppState.LANDING);
@@ -104,6 +107,9 @@ const App: React.FC = () => {
   const [pillboxData, setPillboxData] = useState<Medication[]>([]);
   const [activeMedicationId, setActiveMedicationId] = useState<string | null>(null);
 
+  // Training state
+  const [trainingProgress, setTrainingProgress] = useState<TrainingProgress>({ protect: false, alert: false, rescue: false });
+
   // Settings & Profile state
   const [userSettings, setUserSettings] = useState<UserSettings>({
       saveProfileData: {
@@ -133,6 +139,10 @@ const App: React.FC = () => {
 
       const savedProfile = localStorage.getItem('medai-user-profile');
       if (savedProfile) setUserProfile(JSON.parse(savedProfile));
+      
+      const savedTrainingProgress = localStorage.getItem('medai-training-progress');
+      if (savedTrainingProgress) setTrainingProgress(JSON.parse(savedTrainingProgress));
+
     } catch (error) {
       console.error("Failed to load data from localStorage", error);
     }
@@ -199,6 +209,16 @@ const App: React.FC = () => {
     }
   }, [handleSettingsChange, userSettings]);
 
+  const clearTrainingProgress = useCallback(() => {
+      const clearedProgress = { protect: false, alert: false, rescue: false };
+      setTrainingProgress(clearedProgress);
+      try {
+        localStorage.removeItem('medai-training-progress');
+      } catch (error) {
+        console.error("Failed to clear training progress", error);
+      }
+  }, []);
+
 
   // Save journal to localStorage whenever it changes
   useEffect(() => {
@@ -225,6 +245,15 @@ const App: React.FC = () => {
       console.error("Failed to save pillbox data to localStorage", error);
     }
   }, [pillboxData]);
+
+  // Save training progress to localStorage whenever it changes
+  useEffect(() => {
+      try {
+        localStorage.setItem('medai-training-progress', JSON.stringify(trainingProgress));
+      } catch (error) {
+        console.error("Failed to save training progress", error);
+      }
+  }, [trainingProgress]);
 
 
   const handleError = useCallback((errorMessage: string) => {
@@ -256,6 +285,24 @@ const App: React.FC = () => {
     setAppState(AppState.PREVENTION_PLAN_PROFILE);
   }, []);
   
+  const handleNavigateToTraining = useCallback(() => {
+    setAppState(AppState.TRAINING);
+  }, []);
+
+  const handleNavigateToTrainingProtect = useCallback(() => {
+    setAppState(AppState.TRAINING_PROTECT);
+  }, []);
+  
+  const handleNavigateToCrossword = useCallback(() => {
+    setAppState(AppState.CROSSWORD);
+  }, []);
+
+  const handleCompleteProtectSection = useCallback(() => {
+    setTrainingProgress(prev => ({ ...prev, protect: true }));
+    setAppState(AppState.TRAINING);
+  }, []);
+
+
   const handlePreDiagnosisContinue = useCallback(() => {
     setAppState(AppState.INITIAL);
   }, []);
@@ -908,68 +955,62 @@ const App: React.FC = () => {
     setTrendAnalysis(null);
   }, []);
 
-  // Pillbox Handlers
+  // --- Pillbox handlers ---
   const handleGoToPillbox = useCallback(() => {
     setAppState(AppState.PILLBOX);
   }, []);
-
-  const handleAddMedication = useCallback((medication: Medication) => {
-    setPillboxData(prev => [...prev, medication]);
-    setAppState(AppState.PILLBOX);
+  
+  const handleNavigateToAddMedication = useCallback(() => {
+    setAppState(AppState.PILLBOX_ADD_MEDICATION);
   }, []);
 
-  const handleNavigateToMedicationDetail = useCallback(async (medicationId: string) => {
-    setActiveMedicationId(medicationId);
-    const medication = pillboxData.find(m => m.id === medicationId);
-    if (!medication) return;
-
-    if (medication.sideEffectInfo) {
-        setAppState(AppState.MEDICATION_DETAIL);
-    } else {
-        setAppState(AppState.GENERATING_SIDE_EFFECTS);
-        try {
-            const info = await generateMedicationSideEffects(medication.name);
-            setPillboxData(prev => prev.map(m => m.id === medicationId ? {...m, sideEffectInfo: info} : m));
-            setAppState(AppState.MEDICATION_DETAIL);
-        } catch (err) {
-            handleError(err instanceof Error ? err.message : "Erreur lors de la récupération des effets secondaires.");
-        }
+  const handleAddMedication = useCallback(async (medication: Medication) => {
+    setAppState(AppState.GENERATING_SIDE_EFFECTS);
+    try {
+      const sideEffects = await generateMedicationSideEffects(medication.name);
+      const newMedication: Medication = { ...medication, sideEffectInfo: sideEffects };
+      setPillboxData(prev => [...prev, newMedication]);
+      setAppState(AppState.PILLBOX);
+    } catch (err) {
+      handleError(err instanceof Error ? err.message : "Impossible de récupérer les informations sur ce médicament.");
     }
-  }, [pillboxData, handleError]);
+  }, [handleError]);
+
+  const handleNavigateToMedicationDetail = useCallback((medicationId: string) => {
+    setActiveMedicationId(medicationId);
+    setAppState(AppState.MEDICATION_DETAIL);
+  }, []);
 
   const handleUpdateSideEffectNotes = useCallback((medicationId: string, notes: string) => {
-      const today = new Date().toISOString().split('T')[0];
-      setPillboxData(prev => prev.map(med => {
-          if (med.id === medicationId) {
-              const newLog = { date: today, notes };
-              const existingLogs = med.trackedSideEffects || [];
-              const logIndex = existingLogs.findIndex(l => l.date === today);
-
-              let updatedLogs;
-              if (logIndex > -1) {
-                  updatedLogs = [...existingLogs];
-                  updatedLogs[logIndex] = newLog;
-              } else {
-                  updatedLogs = [...existingLogs, newLog];
-              }
-              
-              updatedLogs.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-              
-              return { ...med, trackedSideEffects: updatedLogs };
+    const today = new Date().toISOString().split('T')[0];
+    setPillboxData(prev => prev.map(med => {
+      if (med.id === medicationId) {
+        const newSideEffects = med.trackedSideEffects ? [...med.trackedSideEffects] : [];
+        const todayIndex = newSideEffects.findIndex(log => log.date === today);
+        if (todayIndex > -1) {
+          if (notes.trim()) {
+            newSideEffects[todayIndex].notes = notes;
+          } else {
+            newSideEffects.splice(todayIndex, 1);
           }
-          return med;
-      }));
+        } else if (notes.trim()) {
+          newSideEffects.push({ date: today, notes });
+        }
+        return { ...med, trackedSideEffects: newSideEffects };
+      }
+      return med;
+    }));
   }, []);
 
-
-  const resetApp = () => {
+  // --- Reset/Retry handler ---
+  const resetState = useCallback(() => {
     setAppState(AppState.LANDING);
     setInitialSymptoms('');
     setPatientContext(null);
     setExtractedSymptoms([]);
+    setMainSymptom(null);
     setSymptomIntensities([]);
     setOverallDiscomfort(null);
-    setMainSymptom(null);
     setSymptomCharacteristics(null);
     setPreQuestionnaireAnswers([]);
     setQuestions([]);
@@ -987,130 +1028,133 @@ const App: React.FC = () => {
     setPhotoPrompt(null);
     setPhotoBase64(null);
     setReport(null);
-    setAppointmentPrepData(null);
-    setScenarioData(null);
     setError(null);
-    setChatSession(null);
-    setChatHistory([]);
-    setIsChatResponding(false);
-    setPreventionProfile(null);
-    setPreventionPlan(null);
-    setRiskAnalysis(null);
-    setTrendAnalysis(null);
     setIsDirectFlow(false);
     setIsMemoryTestRelevant(false);
     setMemoryTestWords([]);
     setMemoryTestResponse([]);
-    setActiveMedicationId(null);
-  };
-  
+    setChatSession(null);
+    setChatHistory([]);
+    setAppointmentPrepData(null);
+    setScenarioData(null);
+    setPreventionProfile(null);
+    setPreventionPlan(null);
+    setRiskAnalysis(null);
+  }, []);
+
+  const handleRetry = useCallback(() => {
+    // A simple retry logic, could be more sophisticated
+    // For now, it just resets the app state.
+    resetState();
+  }, [resetState]);
+
   const renderContent = () => {
     switch (appState) {
       case AppState.LANDING:
-        return <LandingScreen onStartDiagnosis={handleNavigateToPreDiagnosis} onEmergency={handleNavigateToEmergencyGuide} onStartPreventionPlan={handleNavigateToPreventionPlan} onDirectDiagnosisSubmit={handleDirectDiagnosisSubmit} onShowHowItWorks={handleNavigateToHowItWorks} onShowSettings={handleNavigateToSettings} hasJournalData={journalData.length > 0} onGoToJournal={handleGoToJournal} onGoToPillbox={handleGoToPillbox} />;
+        return <LandingScreen 
+          onStartDiagnosis={handleNavigateToPreDiagnosis} 
+          onEmergency={handleNavigateToEmergencyGuide} 
+          onStartPreventionPlan={handleNavigateToPreventionPlan}
+          onDirectDiagnosisSubmit={handleDirectDiagnosisSubmit}
+          onShowHowItWorks={handleNavigateToHowItWorks}
+          onShowSettings={handleNavigateToSettings}
+          hasJournalData={journalData.length > 0}
+          onGoToJournal={handleGoToJournal}
+          onGoToPillbox={handleGoToPillbox}
+          onStartTraining={handleNavigateToTraining}
+          onNavigateToCrossword={handleNavigateToCrossword}
+        />;
       case AppState.HOW_IT_WORKS:
-        return <HowItWorksScreen onBackToLanding={resetApp} />;
+        return <HowItWorksScreen onBackToLanding={resetState} />;
       case AppState.EMERGENCY_GUIDE:
-        return <EmergencyGuideScreen onBack={() => setAppState(AppState.LANDING)} />;
+        return <EmergencyGuideScreen onBack={resetState} />;
       case AppState.SETTINGS:
-        return <SettingsScreen onBackToLanding={resetApp} settings={userSettings} onSettingsChange={handleSettingsChange} journalData={journalData} pillboxData={pillboxData} onClearJournal={clearJournal} onClearPillbox={clearPillbox} onClearProfile={clearProfile} onShowDataPrivacy={handleNavigateToDataPrivacy} />;
+        return <SettingsScreen 
+          onBackToLanding={resetState} 
+          settings={userSettings}
+          onSettingsChange={handleSettingsChange}
+          journalData={journalData}
+          pillboxData={pillboxData}
+          trainingProgress={trainingProgress}
+          onClearJournal={clearJournal}
+          onClearPillbox={clearPillbox}
+          onClearProfile={clearProfile}
+          onClearTrainingProgress={clearTrainingProgress}
+          onShowDataPrivacy={handleNavigateToDataPrivacy}
+        />;
       case AppState.DATA_PRIVACY_EXPLANATION:
-        return <DataPrivacyScreen onBack={() => setAppState(AppState.SETTINGS)} />;
+        return <DataPrivacyScreen onBack={handleNavigateToSettings} />;
       case AppState.PRE_DIAGNOSIS:
         return <PreDiagnosisScreen onContinue={handlePreDiagnosisContinue} />;
       case AppState.INITIAL:
         return <InitialScreen onStart={handleStartDiagnosis} />;
       case AppState.CONTEXT_GATHERING:
         return <ContextScreen onSubmit={handleContextSubmit} savedProfile={userProfile} />;
+      case AppState.GENERATING_QUESTIONS:
+      case AppState.GENERATING_EXCLUSION_SYMPTOMS:
+      case AppState.GENERATING_SELF_EXAM_PROMPT:
+      case AppState.GENERATING_NEURO_TESTS:
+      case AppState.GENERATING_CRT_PROMPT:
+      case AppState.GENERATING_RESPIRATORY_RATE_PROMPT:
+      case AppState.GENERATING_STABILITY_TEST_PROMPT:
+      case AppState.GENERATING_SPEECH_DYSPNEA_PROMPT:
+      case AppState.GENERATING_PHOTO_PROMPT:
+      case AppState.GENERATING_APPOINTMENT_PREP:
+      case AppState.GENERATING_SCENARIOS:
+      case AppState.GENERATING_PREVENTION_PLAN:
+      case AppState.ANALYZING_SYMPTOM_TRENDS:
+      case AppState.GENERATING_SIDE_EFFECTS:
+      case AppState.GENERATING_MEMORY_TEST_WORDS:
+        return <Loader text="L'IA réfléchit..." />;
       case AppState.SYMPTOM_INTENSITY:
         return <SymptomIntensityScreen symptoms={extractedSymptoms} onSubmit={handleIntensitySubmit} onSkip={handleSkipIntensityScreen} />;
       case AppState.SYMPTOM_CHARACTERISTICS:
-        return <SymptomCharacteristicsScreen onSubmit={handleCharacteristicsSubmit} onSkip={() => handleCharacteristicsSubmit({})} />;
+        return <SymptomCharacteristicsScreen onSubmit={handleCharacteristicsSubmit} onSkip={handleCharacteristicsSubmit.bind(null, {})} />;
       case AppState.PRE_QUESTIONNAIRE:
         return <PreQuestionnaireScreen onSubmit={handlePreQuestionnaireSubmit} />;
-      case AppState.GENERATING_MEMORY_TEST_WORDS:
-        return <Loader text="Préparation du test de mémoire..." />;
       case AppState.ANNOUNCE_MEMORY_TEST:
         return <AnnounceMemoryTestScreen words={memoryTestWords} onContinue={handleMemoryTestAnnounced} />;
-      case AppState.GENERATING_QUESTIONS:
-        return <Loader text="Analyse des symptômes et génération du questionnaire..." />;
       case AppState.QUESTIONNAIRE:
         return <QuestionnaireScreen questions={questions} onSubmit={handleQuestionnaireComplete} />;
       case AppState.MEMORY_TEST_INPUT:
         return <MemoryTestInputScreen onSubmit={handleMemoryTestInputComplete} />;
-      case AppState.GENERATING_EXCLUSION_SYMPTOMS:
-        return <Loader text="Préparation du filtre de diagnostic..." />;
       case AppState.EXCLUSION_FILTER:
-        return <ExclusionFilterScreen symptoms={potentialExclusionSymptoms} onSubmit={handleExclusionFilterComplete} onSkip={() => handleExclusionFilterComplete([])} />;
-      case AppState.GENERATING_SELF_EXAM_PROMPT:
-        return <Loader text="Analyse des informations pour l'auto-examen..." />;
+        return <ExclusionFilterScreen symptoms={potentialExclusionSymptoms} onSubmit={handleExclusionFilterComplete} onSkip={handleExclusionFilterComplete.bind(null, [])} />;
       case AppState.SELF_EXAM:
-        if (!selfExamPrompt) return <ErrorScreen message="L'instruction pour l'auto-examen n'a pas pu être chargée." onRetry={() => handleExclusionFilterComplete(excludedSymptoms)} />;
-        return <SelfExamScreen 
-          prompt={selfExamPrompt} 
-          onSubmit={handleSelfExamComplete}
-          onSkip={() => handleSelfExamComplete('')}
-        />;
-      case AppState.GENERATING_NEURO_TESTS:
-        return <Loader text="Vérification de la pertinence d'un test neurologique..." />;
+        return selfExamPrompt ? <SelfExamScreen prompt={selfExamPrompt} onSubmit={handleSelfExamComplete} onSkip={handleSelfExamComplete.bind(null, '')} /> : null;
       case AppState.NEURO_TESTS:
-        return <NeuroTestScreen
-          questions={neuroTestQuestions}
-          onSubmit={handleNeuroTestComplete}
-          onSkip={() => handleNeuroTestComplete([])}
-        />;
-       case AppState.GENERATING_CRT_PROMPT:
-        return <Loader text="Vérification de la pertinence d'un test circulatoire..." />;
+        return <NeuroTestScreen questions={neuroTestQuestions} onSubmit={handleNeuroTestComplete} onSkip={handleNeuroTestComplete.bind(null, [])}/>
       case AppState.CRT_TEST:
-        return <CRTScreen onSubmit={handleCRTTestComplete} onSkip={() => handleCRTTestComplete(null)} />;
-      case AppState.GENERATING_RESPIRATORY_RATE_PROMPT:
-        return <Loader text="Vérification de la pertinence d'un test respiratoire..." />;
+        return <CRTScreen onSubmit={handleCRTTestComplete} onSkip={handleCRTTestComplete.bind(null, null)} />
       case AppState.RESPIRATORY_RATE_TEST:
         return <RespiratoryRateScreen onSubmit={handleRespiratoryRateTestComplete} />;
-      case AppState.GENERATING_STABILITY_TEST_PROMPT:
-        return <Loader text="Vérification de la pertinence d'un test de stabilité..." />;
       case AppState.STABILITY_TEST:
-        return <StabilityTestScreen onSubmit={handleStabilityTestComplete} onSkip={() => handleStabilityTestComplete(null)} />;
-      case AppState.GENERATING_SPEECH_DYSPNEA_PROMPT:
-        return <Loader text="Vérification de la pertinence d'un test d'essoufflement..." />;
+        return <StabilityTestScreen onSubmit={handleStabilityTestComplete} onSkip={handleStabilityTestComplete.bind(null, null)} />;
       case AppState.SPEECH_DYSPNEA_TEST:
         return <SpeechDyspneaScreen onSubmit={handleSpeechDyspneaTestComplete} />;
-      case AppState.GENERATING_PHOTO_PROMPT:
-        return <Loader text="Analyse des informations pour la photo..." />;
       case AppState.PHOTO_UPLOAD:
         return <PhotoUploadScreen onComplete={handlePhotoSubmit} photoPrompt={photoPrompt} />;
       case AppState.GENERATING_REPORT:
-        return <Loader text="Analyse de vos réponses et génération du rapport..." />;
+        return <Loader text="Génération de votre rapport d'analyse..." />;
       case AppState.GENERATING_DIRECT_REPORT:
-        return <Loader text="Génération de vos conseils personnalisés..." />;
+        return <Loader text="Génération de votre rapport informatif..." />;
       case AppState.SYMPTOM_MONITORING:
-        return report ? <SymptomMonitoringScreen instructions={report.monitoringInstructions} onContinue={handleGoToReport} /> : <ErrorScreen message="Les consignes de surveillance n'ont pas pu être affichées." onRetry={resetApp} />;
+        return report ? <SymptomMonitoringScreen instructions={report.monitoringInstructions} onContinue={handleGoToReport} /> : null;
       case AppState.REPORT:
-        if (!report) {
-            return <ErrorScreen message="Le rapport n'a pas pu être affiché." onRetry={resetApp} />;
-        }
-        if (!isDirectFlow && !patientContext) {
-            return <ErrorScreen message="Le contexte patient est manquant pour afficher le rapport." onRetry={resetApp} />;
-        }
-        return <ReportScreen
-            report={report}
-            patientContext={isDirectFlow ? null : patientContext}
-            onReset={resetApp}
-            onStartSupportChat={handleStartSupportChat}
-            onGoToSummary={handleGoToSummary}
-            onGoToAppointmentPrep={handleGoToAppointmentPrep}
-            onGoToScenarioSimulator={handleGoToScenarioSimulator}
-            onStartTracking={handleStartTracking}
-            onGoToPillbox={handleGoToPillbox}
-            isDirectFlow={isDirectFlow}
-        />;
-      case AppState.SYMPTOM_JOURNAL_SETUP:
-        return <SymptomJournalSetupScreen suggestedSymptoms={symptomsToTrackSetup} onSubmit={handleJournalSetupComplete} onBackToReport={handleBackToReport} />;
-      case AppState.SYMPTOM_JOURNAL:
-        return <SymptomJournalScreen journalData={journalData} onAddEntry={handleAddJournalEntry} onBackToLanding={resetApp} onAnalyzeTrends={handleAnalyzeTrends} trendAnalysis={trendAnalysis} onClearTrendAnalysis={handleClearTrendAnalysis} />;
+        return report ? <ReportScreen 
+          report={report} 
+          patientContext={patientContext}
+          onReset={resetState} 
+          onStartSupportChat={handleStartSupportChat}
+          onGoToSummary={handleGoToSummary}
+          onGoToAppointmentPrep={handleGoToAppointmentPrep}
+          onGoToScenarioSimulator={handleGoToScenarioSimulator}
+          onStartTracking={handleStartTracking}
+          onGoToPillbox={handleGoToPillbox}
+          isDirectFlow={isDirectFlow}
+        /> : null;
       case AppState.DIAGNOSTIC_SUMMARY:
-        if (!patientContext || !report) return <ErrorScreen message="Les données du récapitulatif sont manquantes." onRetry={resetApp} />;
-        return <DiagnosticSummaryScreen 
+        return report && patientContext ? <DiagnosticSummaryScreen 
             onBackToReport={handleBackToReport}
             patientContext={patientContext}
             initialSymptoms={initialSymptoms}
@@ -1131,58 +1175,75 @@ const App: React.FC = () => {
             report={report}
             memoryTestWords={isMemoryTestRelevant ? memoryTestWords : null}
             memoryTestResponse={isMemoryTestRelevant ? memoryTestResponse : null}
-          />
+        /> : null;
       case AppState.PSYCHOLOGICAL_SUPPORT:
         return <ChatScreen 
-            history={chatHistory} 
-            onSendMessage={handleSendChatMessage} 
-            isResponding={isChatResponding} 
-            onBackToReport={handleBackToReport}
-            empathyLevel={empathyLevel}
-            onEmpathyLevelChange={handleEmpathyLevelChange}
-            />;
-      case AppState.GENERATING_APPOINTMENT_PREP:
-          return <Loader text="Préparation de l'aide à la consultation..." />;
+          history={chatHistory} 
+          onSendMessage={handleSendChatMessage} 
+          isResponding={isChatResponding}
+          onBackToReport={handleBackToReport}
+          empathyLevel={empathyLevel}
+          onEmpathyLevelChange={handleEmpathyLevelChange}
+        />;
       case AppState.MEDICAL_APPOINTMENT_PREP:
-          if (!appointmentPrepData) return <ErrorScreen message="Les données de préparation sont manquantes." onRetry={() => setAppState(AppState.REPORT)} />;
-          return <MedicalAppointmentPrepScreen prepData={appointmentPrepData} onBackToReport={handleBackToReport} onGoToSummary={handleGoToSummary} />
-      case AppState.GENERATING_SCENARIOS:
-        return <Loader text="Génération des scénarios d'évolution..." />;
+        return appointmentPrepData ? <MedicalAppointmentPrepScreen prepData={appointmentPrepData} onBackToReport={handleBackToReport} onGoToSummary={handleGoToSummary} /> : null;
       case AppState.SCENARIO_SIMULATOR:
-        if (!scenarioData) return <ErrorScreen message="Les données du simulateur sont manquantes." onRetry={() => setAppState(AppState.REPORT)} />;
-        return <ScenarioSimulatorScreen scenarios={scenarioData.scenarios} onBackToReport={handleBackToReport} />
+        return scenarioData ? <ScenarioSimulatorScreen scenarios={scenarioData.scenarios} onBackToReport={handleBackToReport} /> : null;
       case AppState.PREVENTION_PLAN_PROFILE:
-        return <PreventionProfileScreen onSubmit={handlePreventionProfileSubmit} onBackToLanding={resetApp} />;
-      case AppState.GENERATING_PREVENTION_PLAN:
-        return <Loader text="Génération de votre plan de prévention personnalisé..." />;
+        return <PreventionProfileScreen onSubmit={handlePreventionProfileSubmit} onBackToLanding={resetState} />;
       case AppState.PREVENTION_PLAN_REPORT:
-        if (!preventionPlan || !riskAnalysis) return <ErrorScreen message="Le plan de prévention n'a pas pu être généré." onRetry={resetApp} />;
-        return <PreventionPlanReportScreen plan={preventionPlan} riskAnalysis={riskAnalysis} onReset={resetApp} />;
-       case AppState.ANALYZING_SYMPTOM_TRENDS:
-        return <Loader text="Analyse de vos tendances de santé..." />;
+        return preventionPlan && riskAnalysis ? <PreventionPlanReportScreen plan={preventionPlan} riskAnalysis={riskAnalysis} onReset={resetState} /> : null;
+      case AppState.SYMPTOM_JOURNAL_SETUP:
+        return <SymptomJournalSetupScreen suggestedSymptoms={symptomsToTrackSetup} onSubmit={handleJournalSetupComplete} onBackToReport={handleBackToReport} />;
+      case AppState.SYMPTOM_JOURNAL:
+        return <SymptomJournalScreen 
+          journalData={journalData} 
+          onAddEntry={handleAddJournalEntry} 
+          onBackToLanding={resetState} 
+          onAnalyzeTrends={handleAnalyzeTrends}
+          trendAnalysis={trendAnalysis}
+          onClearTrendAnalysis={handleClearTrendAnalysis}
+        />;
       case AppState.PILLBOX:
-        return <PillboxScreen pillboxData={pillboxData} onNavigateToAdd={() => setAppState(AppState.PILLBOX_ADD_MEDICATION)} onNavigateToDetail={handleNavigateToMedicationDetail} onBackToLanding={resetApp} />;
+        return <PillboxScreen 
+          pillboxData={pillboxData} 
+          onNavigateToAdd={handleNavigateToAddMedication} 
+          onNavigateToDetail={handleNavigateToMedicationDetail} 
+          onBackToLanding={resetState}
+        />;
       case AppState.PILLBOX_ADD_MEDICATION:
-        return <AddMedicationScreen onAddMedication={handleAddMedication} onBack={() => setAppState(AppState.PILLBOX)} />;
-      case AppState.GENERATING_SIDE_EFFECTS:
-        return <Loader text="Recherche des informations sur les effets secondaires..." />;
-      case AppState.MEDICATION_DETAIL: {
+        return <AddMedicationScreen onAddMedication={handleAddMedication} onBack={handleGoToPillbox} />;
+      case AppState.MEDICATION_DETAIL:
         const activeMed = pillboxData.find(m => m.id === activeMedicationId);
-        if (!activeMed) return <ErrorScreen message="Médicament non trouvé." onRetry={() => setAppState(AppState.PILLBOX)} />;
-        return <MedicationDetailScreen medication={activeMed} onUpdateSideEffectNotes={handleUpdateSideEffectNotes} onBack={() => setAppState(AppState.PILLBOX)} />;
-      }
+        return activeMed ? <MedicationDetailScreen medication={activeMed} onUpdateSideEffectNotes={handleUpdateSideEffectNotes} onBack={handleGoToPillbox} /> : null;
+      case AppState.TRAINING:
+        return <TrainingScreen onBackToLanding={resetState} onNavigateToTrainingProtect={handleNavigateToTrainingProtect} trainingProgress={trainingProgress} />;
+      case AppState.TRAINING_PROTECT:
+        return <ProtectScreen onComplete={handleCompleteProtectSection} onBack={handleNavigateToTraining} />;
+      case AppState.CROSSWORD:
+        return <CrosswordScreen onBack={resetState} />;
       case AppState.ERROR:
-        return <ErrorScreen message={error || "Une erreur inconnue est survenue."} onRetry={resetApp} />;
+        return error ? <ErrorScreen message={error} onRetry={handleRetry} /> : null;
       default:
-        return <LandingScreen onStartDiagnosis={handleNavigateToPreDiagnosis} onEmergency={handleNavigateToEmergencyGuide} onStartPreventionPlan={handleNavigateToPreventionPlan} onDirectDiagnosisSubmit={handleDirectDiagnosisSubmit} onShowHowItWorks={handleNavigateToHowItWorks} onShowSettings={handleNavigateToSettings} hasJournalData={journalData.length > 0} onGoToJournal={handleGoToJournal} onGoToPillbox={handleGoToPillbox} />;
+        return <LandingScreen 
+          onStartDiagnosis={handleNavigateToPreDiagnosis} 
+          onEmergency={handleNavigateToEmergencyGuide} 
+          onStartPreventionPlan={handleNavigateToPreventionPlan}
+          onDirectDiagnosisSubmit={handleDirectDiagnosisSubmit}
+          onShowHowItWorks={handleNavigateToHowItWorks}
+          onShowSettings={handleNavigateToSettings}
+          hasJournalData={journalData.length > 0}
+          onGoToJournal={handleGoToJournal}
+          onGoToPillbox={handleGoToPillbox}
+          onStartTraining={handleNavigateToTraining}
+          onNavigateToCrossword={handleNavigateToCrossword}
+        />;
     }
   };
 
   return (
-    <main className="min-h-screen w-full flex items-center justify-center bg-slate-900 font-sans p-4">
-      <div className="w-full transition-all duration-500">
+    <main className="bg-slate-900 text-slate-200 min-h-screen flex items-center justify-center p-4 font-sans antialiased">
         {renderContent()}
-      </div>
     </main>
   );
 };
