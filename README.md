@@ -1,6 +1,5 @@
 # Med.AI - Your AI-Powered Medical Assistant
 
-![Med.AI Landing Page](https://i.imgur.com/your-screenshot-url.png) <!-- It's recommended to replace this with an actual screenshot of the app -->
 
 **Med.AI** is a sophisticated, AI-powered web application designed to provide preliminary medical diagnosis, proactive health prevention plans, and robust post-assessment support tools. By leveraging Google's Gemini API, it guides users through a dynamic and context-aware questionnaire to generate a detailed and actionable health report.
 
@@ -70,8 +69,8 @@ To run this project locally, follow these steps:
 
 1.  **Clone the repository:**
     ```bash
-    git clone https://github.com/your-username/med-ai.git
-    cd med-ai
+    git clone https://github.com/Rimbaud1/Med.AI
+    cd Med-AI
     ```
 
 2.  **Install dependencies:**
