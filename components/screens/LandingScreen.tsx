@@ -1,6 +1,7 @@
 
+
 import React, { useState } from 'react';
-import { StethoscopeIcon, ClipboardDocumentCheckIcon, ShieldExclamationIcon, ShieldCheckIcon, BeakerIcon, InformationCircleIcon, BookOpenIcon } from '../icons';
+import { StethoscopeIcon, ClipboardDocumentCheckIcon, ShieldExclamationIcon, ShieldCheckIcon, BeakerIcon, InformationCircleIcon, BookOpenIcon, Cog6ToothIcon } from '../icons';
 
 interface LandingScreenProps {
   onStartDiagnosis: () => void;
@@ -8,11 +9,12 @@ interface LandingScreenProps {
   onStartPreventionPlan: () => void;
   onDirectDiagnosisSubmit: (diagnosis: string) => void;
   onShowHowItWorks: () => void;
+  onShowSettings: () => void;
   hasJournalData: boolean;
   onGoToJournal: () => void;
 }
 
-const LandingScreen: React.FC<LandingScreenProps> = ({ onStartDiagnosis, onEmergency, onStartPreventionPlan, onDirectDiagnosisSubmit, onShowHowItWorks, hasJournalData, onGoToJournal }) => {
+const LandingScreen: React.FC<LandingScreenProps> = ({ onStartDiagnosis, onEmergency, onStartPreventionPlan, onDirectDiagnosisSubmit, onShowHowItWorks, onShowSettings, hasJournalData, onGoToJournal }) => {
   const [directDiagnosis, setDirectDiagnosis] = useState('');
 
   const handleDirectSubmit = (e: React.FormEvent) => {
@@ -23,7 +25,12 @@ const LandingScreen: React.FC<LandingScreenProps> = ({ onStartDiagnosis, onEmerg
   };
   
   return (
-    <div className="flex flex-col items-center justify-center w-full max-w-4xl mx-auto p-4 md:p-8">
+    <div className="flex flex-col items-center justify-center w-full max-w-4xl mx-auto p-4 md:p-8 relative">
+      <div className="absolute top-4 right-4 flex gap-2">
+         <button onClick={onShowSettings} className="p-2 text-slate-400 hover:text-sky-400 hover:bg-slate-700/50 rounded-full transition-colors" aria-label="Paramètres">
+            <Cog6ToothIcon className="h-6 w-6" />
+        </button>
+      </div>
       <div className="bg-sky-500/10 p-4 rounded-full mb-6 border border-sky-500/30">
         <StethoscopeIcon className="h-12 w-12 text-sky-400" />
       </div>

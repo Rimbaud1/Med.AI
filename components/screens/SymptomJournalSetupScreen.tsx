@@ -40,7 +40,7 @@ const SymptomJournalSetupScreen: React.FC<SymptomJournalSetupScreenProps> = ({ s
       </div>
       <h1 className="text-3xl md:text-4xl font-bold text-center text-slate-100">Configurer le Suivi des Symptômes</h1>
       <p className="mt-4 text-center text-slate-400 max-w-lg">
-        Sélectionnez les symptômes que vous souhaitez suivre au quotidien. Nous avons pré-sélectionné ceux issus de votre bilan.
+        Sélectionnez les symptômes que vous souhaitez suivre au quotidien. Nous avons pré-sélectionné ceux que vous avez signalés.
       </p>
 
       <div className="w-full mt-8 bg-slate-800 rounded-lg p-6 md:p-8 shadow-lg border border-slate-700">

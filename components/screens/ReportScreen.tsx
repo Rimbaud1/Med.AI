@@ -11,7 +11,7 @@ interface ReportScreenProps {
   onGoToSummary: () => void;
   onGoToAppointmentPrep: () => void;
   onGoToScenarioSimulator: () => void;
-  onStartTracking: (symptoms: string[]) => void;
+  onStartTracking: () => void;
   isDirectFlow?: boolean;
 }
 
@@ -41,8 +41,7 @@ const ReportScreen: React.FC<ReportScreenProps> = ({ report, patientContext, onR
   };
 
   const handleStartTrackingClick = () => {
-    const symptoms = report.possibleIssues.map(issue => issue.name);
-    onStartTracking(symptoms);
+    onStartTracking();
   };
 
 

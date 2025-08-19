@@ -1,7 +1,6 @@
-
 import React, { useState, useCallback, useEffect } from 'react';
 import { AppState } from './types';
-import type { Question, Answer, ReportData, PatientContext, SymptomIntensity, PreQuestionnaireAnswer, SymptomCharacteristics, ChatMessage, AppointmentPrepData, EmpathyLevel, ScenarioData, PreventionProfile, PreventionPlanData, NeuroTest, StabilityTestResult, CapillaryRefillTimeResult, SpeechDyspneaResult, TrackedSymptom, SymptomLogEntry } from './types';
+import type { Question, Answer, ReportData, PatientContext, SymptomIntensity, PreQuestionnaireAnswer, SymptomCharacteristics, ChatMessage, AppointmentPrepData, EmpathyLevel, ScenarioData, PreventionProfile, PreventionPlanData, NeuroTest, StabilityTestResult, CapillaryRefillTimeResult, SpeechDyspneaResult, TrackedSymptom, SymptomLogEntry, UserSettings, UserProfileData } from './types';
 import { generateQuestions, generateReport, extractSymptoms, generateExclusionSymptoms, generateSelfExamPrompt, generateNeuroTests, shouldRequestCRT, shouldRequestRespiratoryRate, shouldRequestStabilityTest, shouldRequestSpeechDyspneaTest, generatePhotoPrompt, generateAppointmentPrepData, generateScenarios, generatePreventionPlan, generateDirectReport, shouldTriggerMemoryTest, generateMemoryTestWords } from './services/geminiService';
 import { GoogleGenAI } from "@google/genai";
 import type { Chat } from "@google/genai";
@@ -10,6 +9,7 @@ import type { Chat } from "@google/genai";
 import LandingScreen from './components/screens/LandingScreen';
 import HowItWorksScreen from './components/screens/HowItWorksScreen';
 import EmergencyGuideScreen from './components/screens/EmergencyGuideScreen';
+import SettingsScreen from './components/screens/SettingsScreen';
 import PreDiagnosisScreen from './components/screens/PreDiagnosisScreen';
 import InitialScreen from './components/screens/InitialScreen';
 import ContextScreen from './components/screens/ContextScreen';
@@ -91,23 +91,78 @@ const App: React.FC = () => {
   const [symptomsToTrackSetup, setSymptomsToTrackSetup] = useState<string[]>([]);
   const [journalData, setJournalData] = useState<TrackedSymptom[]>([]);
 
-  // Load journal from localStorage on initial mount
+  // Settings & Profile state
+  const [userSettings, setUserSettings] = useState<UserSettings>({
+      saveProfileData: {
+          sexAndAge: false,
+          weight: false,
+          location: false,
+          existingConditions: false,
+          currentMedications: false,
+          allergies: false,
+          recentTravels: false,
+      },
+  });
+  const [userProfile, setUserProfile] = useState<UserProfileData | null>(null);
+
+  // Load persistent data from localStorage on initial mount
   useEffect(() => {
     try {
       const savedJournal = localStorage.getItem('medai-journal');
-      if (savedJournal) {
-        setJournalData(JSON.parse(savedJournal));
-      }
+      if (savedJournal) setJournalData(JSON.parse(savedJournal));
+
+      const savedSettings = localStorage.getItem('medai-settings');
+      if (savedSettings) setUserSettings(JSON.parse(savedSettings));
+
+      const savedProfile = localStorage.getItem('medai-user-profile');
+      if (savedProfile) setUserProfile(JSON.parse(savedProfile));
     } catch (error) {
-      console.error("Failed to load journal data from localStorage", error);
+      console.error("Failed to load data from localStorage", error);
     }
   }, []);
+
+  const handleSettingsChange = useCallback((newSettings: UserSettings) => {
+    setUserSettings(newSettings);
+    try {
+      localStorage.setItem('medai-settings', JSON.stringify(newSettings));
+    } catch (error) {
+      console.error("Failed to save settings", error);
+    }
+  }, []);
+
+  const clearJournal = useCallback(() => {
+    setJournalData([]);
+    try {
+      localStorage.removeItem('medai-journal');
+    } catch (error) {
+      console.error("Failed to clear journal data", error);
+    }
+  }, []);
+
+  const clearProfile = useCallback(() => {
+    setUserProfile(null);
+    const clearedSettings: UserSettings = {
+      saveProfileData: {
+        sexAndAge: false, weight: false, location: false, existingConditions: false,
+        currentMedications: false, allergies: false, recentTravels: false,
+      }
+    };
+    handleSettingsChange(clearedSettings);
+    try {
+      localStorage.removeItem('medai-user-profile');
+    } catch (error) {
+      console.error("Failed to clear profile data", error);
+    }
+  }, [handleSettingsChange]);
+
 
   // Save journal to localStorage whenever it changes
   useEffect(() => {
     try {
       if (journalData.length > 0) {
         localStorage.setItem('medai-journal', JSON.stringify(journalData));
+      } else {
+        localStorage.removeItem('medai-journal');
       }
     } catch (error) {
       console.error("Failed to save journal data to localStorage", error);
@@ -130,6 +185,10 @@ const App: React.FC = () => {
 
   const handleNavigateToEmergencyGuide = useCallback(() => {
     setAppState(AppState.EMERGENCY_GUIDE);
+  }, []);
+  
+  const handleNavigateToSettings = useCallback(() => {
+    setAppState(AppState.SETTINGS);
   }, []);
 
   const handleNavigateToPreventionPlan = useCallback(() => {
@@ -518,11 +577,31 @@ const App: React.FC = () => {
           isMemoryTestRelevant ? memoryTestResponse : null
       );
       setReport(generatedReport);
+      
+      // After report generation, save context to profile if settings allow
+      const { saveProfileData } = userSettings;
+      const newProfileData: UserProfileData = {};
+      if (saveProfileData.sexAndAge) {
+          newProfileData.sex = patientContext.sex;
+          newProfileData.age = patientContext.age.toString();
+      }
+      if (saveProfileData.weight && patientContext.weight) newProfileData.weight = patientContext.weight;
+      if (saveProfileData.location && patientContext.location) newProfileData.location = patientContext.location;
+      if (saveProfileData.existingConditions && patientContext.existingConditions) newProfileData.existingConditions = patientContext.existingConditions;
+      if (saveProfileData.currentMedications && patientContext.currentMedications) newProfileData.currentMedications = patientContext.currentMedications;
+      if (saveProfileData.allergies && patientContext.allergies) newProfileData.allergies = patientContext.allergies;
+      if (saveProfileData.recentTravels && patientContext.recentTravels) newProfileData.recentTravels = patientContext.recentTravels;
+      
+      if(Object.keys(newProfileData).length > 0) {
+        setUserProfile(newProfileData);
+        localStorage.setItem('medai-user-profile', JSON.stringify(newProfileData));
+      }
+      
       setAppState(AppState.SYMPTOM_MONITORING);
     } catch (err) {
       handleError(err instanceof Error ? err.message : "Une erreur inconnue est survenue.");
     }
-  }, [initialSymptoms, patientContext, answers, symptomIntensities, overallDiscomfort, mainSymptom, symptomCharacteristics, preQuestionnaireAnswers, excludedSymptoms, selfExamResult, neuroTestAnswers, crtResult, respiratoryRate, stabilityTestResult, speechDyspneaResult, isMemoryTestRelevant, memoryTestWords, memoryTestResponse, handleError]);
+  }, [initialSymptoms, patientContext, answers, symptomIntensities, overallDiscomfort, mainSymptom, symptomCharacteristics, preQuestionnaireAnswers, excludedSymptoms, selfExamResult, neuroTestAnswers, crtResult, respiratoryRate, stabilityTestResult, speechDyspneaResult, isMemoryTestRelevant, memoryTestWords, memoryTestResponse, handleError, userSettings]);
 
   const handleDirectDiagnosisSubmit = useCallback(async (diagnosis: string) => {
     setIsDirectFlow(true);
@@ -691,10 +770,18 @@ const App: React.FC = () => {
     }
   }, [handleError]);
 
-  const handleStartTracking = useCallback((symptoms: string[]) => {
-    setSymptomsToTrackSetup(symptoms);
+  const handleStartTracking = useCallback(() => {
+    const symptomsToSuggest = new Set<string>();
+    
+    if (mainSymptom) {
+        symptomsToSuggest.add(mainSymptom);
+    }
+    symptomIntensities.forEach(s => symptomsToSuggest.add(s.name));
+    extractedSymptoms.forEach(s => symptomsToSuggest.add(s));
+
+    setSymptomsToTrackSetup(Array.from(symptomsToSuggest));
     setAppState(AppState.SYMPTOM_JOURNAL_SETUP);
-  }, []);
+  }, [mainSymptom, symptomIntensities, extractedSymptoms]);
 
   const handleJournalSetupComplete = useCallback((symptomsToTrack: string[]) => {
     setJournalData(prevData => {
@@ -777,17 +864,19 @@ const App: React.FC = () => {
   const renderContent = () => {
     switch (appState) {
       case AppState.LANDING:
-        return <LandingScreen onStartDiagnosis={handleNavigateToPreDiagnosis} onEmergency={handleNavigateToEmergencyGuide} onStartPreventionPlan={handleNavigateToPreventionPlan} onDirectDiagnosisSubmit={handleDirectDiagnosisSubmit} onShowHowItWorks={handleNavigateToHowItWorks} hasJournalData={journalData.length > 0} onGoToJournal={handleGoToJournal} />;
+        return <LandingScreen onStartDiagnosis={handleNavigateToPreDiagnosis} onEmergency={handleNavigateToEmergencyGuide} onStartPreventionPlan={handleNavigateToPreventionPlan} onDirectDiagnosisSubmit={handleDirectDiagnosisSubmit} onShowHowItWorks={handleNavigateToHowItWorks} onShowSettings={handleNavigateToSettings} hasJournalData={journalData.length > 0} onGoToJournal={handleGoToJournal} />;
       case AppState.HOW_IT_WORKS:
         return <HowItWorksScreen onBackToLanding={resetApp} />;
       case AppState.EMERGENCY_GUIDE:
         return <EmergencyGuideScreen onBack={() => setAppState(AppState.LANDING)} />;
+      case AppState.SETTINGS:
+        return <SettingsScreen onBackToLanding={resetApp} settings={userSettings} onSettingsChange={handleSettingsChange} journalData={journalData} onClearJournal={clearJournal} onClearProfile={clearProfile} />;
       case AppState.PRE_DIAGNOSIS:
         return <PreDiagnosisScreen onContinue={handlePreDiagnosisContinue} />;
       case AppState.INITIAL:
         return <InitialScreen onStart={handleStartDiagnosis} />;
       case AppState.CONTEXT_GATHERING:
-        return <ContextScreen onSubmit={handleContextSubmit} />;
+        return <ContextScreen onSubmit={handleContextSubmit} savedProfile={userProfile} />;
       case AppState.SYMPTOM_INTENSITY:
         return <SymptomIntensityScreen symptoms={extractedSymptoms} onSubmit={handleIntensitySubmit} onSkip={handleSkipIntensityScreen} />;
       case AppState.SYMPTOM_CHARACTERISTICS:
@@ -926,7 +1015,7 @@ const App: React.FC = () => {
       case AppState.ERROR:
         return <ErrorScreen message={error || "Une erreur inconnue est survenue."} onRetry={resetApp} />;
       default:
-        return <LandingScreen onStartDiagnosis={handleNavigateToPreDiagnosis} onEmergency={handleNavigateToEmergencyGuide} onStartPreventionPlan={handleNavigateToPreventionPlan} onDirectDiagnosisSubmit={handleDirectDiagnosisSubmit} onShowHowItWorks={handleNavigateToHowItWorks} hasJournalData={journalData.length > 0} onGoToJournal={handleGoToJournal} />;
+        return <LandingScreen onStartDiagnosis={handleNavigateToPreDiagnosis} onEmergency={handleNavigateToEmergencyGuide} onStartPreventionPlan={handleNavigateToPreventionPlan} onDirectDiagnosisSubmit={handleDirectDiagnosisSubmit} onShowHowItWorks={handleNavigateToHowItWorks} onShowSettings={handleNavigateToSettings} hasJournalData={journalData.length > 0} onGoToJournal={handleGoToJournal} />;
     }
   };
 

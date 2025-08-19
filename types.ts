@@ -1,8 +1,10 @@
 
+
 export enum AppState {
   LANDING,
   HOW_IT_WORKS,
   EMERGENCY_GUIDE,
+  SETTINGS,
   PRE_DIAGNOSIS,
   INITIAL,
   CONTEXT_GATHERING,
@@ -196,3 +198,18 @@ export interface TrackedSymptom {
   name: string;
   logs: SymptomLogEntry[];
 }
+
+// Types for User Settings & Profile
+export interface UserSettings {
+  saveProfileData: {
+    sexAndAge: boolean;
+    weight: boolean;
+    location: boolean;
+    existingConditions: boolean;
+    currentMedications: boolean;
+    allergies: boolean;
+    recentTravels: boolean;
+  };
+}
+
+export type UserProfileData = Partial<Omit<PatientContext, 'age'> & { age: string }>;

@@ -1,6 +1,7 @@
 
-import React, { useState } from 'react';
-import type { PatientContext } from '../../types';
+
+import React, { useState, useEffect } from 'react';
+import type { PatientContext, UserProfileData } from '../../types';
 import { ClipboardListIcon } from '../icons';
 
 // --- Helper Components (moved outside to prevent re-rendering issues) ---
@@ -33,9 +34,10 @@ const Select: React.FC<React.SelectHTMLAttributes<HTMLSelectElement>> = (props) 
 
 interface ContextScreenProps {
   onSubmit: (context: PatientContext) => void;
+  savedProfile: UserProfileData | null;
 }
 
-const ContextScreen: React.FC<ContextScreenProps> = ({ onSubmit }) => {
+const ContextScreen: React.FC<ContextScreenProps> = ({ onSubmit, savedProfile }) => {
   const [sex, setSex] = useState<'Homme' | 'Femme' | 'Autre' | ''>('');
   const [age, setAge] = useState<string>('');
   const [weight, setWeight] = useState<string>('');
@@ -52,6 +54,25 @@ const ContextScreen: React.FC<ContextScreenProps> = ({ onSubmit }) => {
   const [travelDestination, setTravelDestination] = useState('');
   const [travelTimeValue, setTravelTimeValue] = useState('');
   const [travelTimeUnit, setTravelTimeUnit] = useState<'jours' | 'semaines' | 'mois'>('semaines');
+
+  useEffect(() => {
+    if (savedProfile) {
+      setSex(savedProfile.sex || '');
+      setAge(savedProfile.age || '');
+      setWeight(savedProfile.weight?.toString() || '');
+      setLocation(savedProfile.location || '');
+      setExistingConditions(savedProfile.existingConditions || '');
+      setCurrentMedications(savedProfile.currentMedications || '');
+      // Note: Allergies and travels are more complex and might not be pre-filled simply.
+      // This implementation keeps it simple by pre-filling the main fields.
+      setKnownAllergies(savedProfile.allergies || ''); 
+      if (savedProfile.recentTravels) {
+          // A simple parse, might not be perfect for all formats
+          const parts = savedProfile.recentTravels.split(',');
+          if(parts.length > 0) setTravelDestination(parts[0]);
+      }
+    }
+  }, [savedProfile]);
 
 
   const isFormValid = sex && age;

@@ -1,0 +1,138 @@
+import React from 'react';
+import type { UserSettings, TrackedSymptom } from '../../types';
+import { Cog6ToothIcon } from '../icons';
+
+interface SettingsScreenProps {
+  onBackToLanding: () => void;
+  settings: UserSettings;
+  onSettingsChange: (newSettings: UserSettings) => void;
+  journalData: TrackedSymptom[];
+  onClearJournal: () => void;
+  onClearProfile: () => void;
+}
+
+const Toggle: React.FC<{
+  label: string;
+  description: string;
+  enabled: boolean;
+  onChange: (enabled: boolean) => void;
+}> = ({ label, description, enabled, onChange }) => (
+  <div className="flex items-start justify-between p-4 rounded-lg bg-slate-800/60 border border-slate-700/80">
+    <div className="pr-4">
+      <h4 className="font-semibold text-slate-200">{label}</h4>
+      <p className="text-sm text-slate-400">{description}</p>
+    </div>
+    <button
+      type="button"
+      className={`${
+        enabled ? 'bg-sky-600' : 'bg-slate-600'
+      } relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2 focus:ring-offset-slate-800`}
+      role="switch"
+      aria-checked={enabled}
+      onClick={() => onChange(!enabled)}
+    >
+      <span
+        aria-hidden="true"
+        className={`${
+          enabled ? 'translate-x-5' : 'translate-x-0'
+        } pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out`}
+      />
+    </button>
+  </div>
+);
+
+const SettingsScreen: React.FC<SettingsScreenProps> = ({ onBackToLanding, settings, onSettingsChange, journalData, onClearJournal, onClearProfile }) => {
+  const handleToggleChange = (key: keyof UserSettings['saveProfileData'], value: boolean) => {
+    const newSettings = {
+      ...settings,
+      saveProfileData: {
+        ...settings.saveProfileData,
+        [key]: value,
+      },
+    };
+    onSettingsChange(newSettings);
+  };
+  
+  const handleClearJournal = () => {
+    if(window.confirm("Êtes-vous sûr de vouloir supprimer définitivement votre journal de santé ? Cette action est irréversible.")) {
+      onClearJournal();
+    }
+  }
+
+  const handleClearProfile = () => {
+    if(window.confirm("Êtes-vous sûr de vouloir supprimer toutes vos données de profil sauvegardées ? Les préférences de sauvegarde seront aussi réinitialisées.")) {
+      onClearProfile();
+    }
+  }
+
+  const journalEntryCount = journalData.reduce((acc, symptom) => acc + symptom.logs.length, 0);
+
+  return (
+    <div className="w-full max-w-3xl mx-auto p-4 md:p-8">
+      <div className="flex flex-col items-center text-center gap-4 mb-10">
+        <div className="bg-slate-700/50 p-4 rounded-full border border-slate-600">
+          <Cog6ToothIcon className="h-10 w-10 text-slate-300" />
+        </div>
+        <div>
+          <h1 className="text-4xl font-bold text-slate-100">Paramètres</h1>
+          <p className="mt-2 text-slate-400">Gérez vos données et préférences pour Med.AI.</p>
+        </div>
+      </div>
+
+      <div className="space-y-8">
+        {/* Data Preferences Section */}
+        <section>
+          <h2 className="text-2xl font-semibold text-slate-200 mb-4 pb-2 border-b border-slate-700">Préférences de Données</h2>
+          <p className="text-slate-400 text-sm mb-4">
+            Activez ces options pour que Med.AI sauvegarde localement certaines informations afin de pré-remplir les formulaires lors de vos prochains diagnostics.
+          </p>
+          <div className="space-y-3">
+            <Toggle label="Âge et Sexe" description="Sauvegarder votre âge et sexe." enabled={settings.saveProfileData.sexAndAge} onChange={v => handleToggleChange('sexAndAge', v)} />
+            <Toggle label="Poids" description="Sauvegarder votre poids." enabled={settings.saveProfileData.weight} onChange={v => handleToggleChange('weight', v)} />
+            <Toggle label="Localisation" description="Sauvegarder votre ville ou code postal." enabled={settings.saveProfileData.location} onChange={v => handleToggleChange('location', v)} />
+            <Toggle label="Pathologies connues" description="Sauvegarder vos pathologies connues." enabled={settings.saveProfileData.existingConditions} onChange={v => handleToggleChange('existingConditions', v)} />
+            <Toggle label="Traitements en cours" description="Sauvegarder vos traitements." enabled={settings.saveProfileData.currentMedications} onChange={v => handleToggleChange('currentMedications', v)} />
+            <Toggle label="Allergies" description="Sauvegarder vos allergies." enabled={settings.saveProfileData.allergies} onChange={v => handleToggleChange('allergies', v)} />
+            <Toggle label="Voyages récents" description="Sauvegarder vos voyages récents." enabled={settings.saveProfileData.recentTravels} onChange={v => handleToggleChange('recentTravels', v)} />
+          </div>
+        </section>
+
+        {/* Storage Management Section */}
+        <section>
+          <h2 className="text-2xl font-semibold text-slate-200 mb-4 pb-2 border-b border-slate-700">Gestion du Stockage</h2>
+          <p className="text-slate-400 text-sm mb-4">
+            Toutes vos données sont stockées uniquement sur cet appareil, dans ce navigateur.
+          </p>
+          <div className="space-y-4">
+             <div className="p-4 rounded-lg bg-slate-800/60 border border-slate-700/80 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div>
+                  <h4 className="font-semibold text-slate-200">Journal de Santé</h4>
+                  <p className="text-sm text-slate-400">{journalData.length > 0 ? `${journalData.length} symptôme(s) suivi(s), ${journalEntryCount} entrée(s) au total.` : "Aucune donnée dans le journal."}</p>
+                </div>
+                <button onClick={handleClearJournal} disabled={journalData.length === 0} className="w-full sm:w-auto bg-red-600/80 text-white font-bold py-2 px-4 rounded-lg hover:bg-red-500 disabled:bg-slate-700 disabled:text-slate-400 disabled:cursor-not-allowed transition-colors">
+                  Vider le journal
+                </button>
+            </div>
+             <div className="p-4 rounded-lg bg-slate-800/60 border border-slate-700/80 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div>
+                  <h4 className="font-semibold text-slate-200">Profil de Pré-remplissage</h4>
+                   <p className="text-sm text-slate-400">Données sauvegardées pour accélérer vos futurs diagnostics.</p>
+                </div>
+                <button onClick={handleClearProfile} className="w-full sm:w-auto bg-red-600/80 text-white font-bold py-2 px-4 rounded-lg hover:bg-red-500 transition-colors">
+                  Supprimer mon profil
+                </button>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <div className="mt-10 pt-6 border-t border-slate-700 text-center">
+        <button onClick={onBackToLanding} className="bg-sky-600 text-white font-bold py-3 px-8 rounded-lg hover:bg-sky-500 transition duration-200">
+          Retour à l'accueil
+        </button>
+      </div>
+    </div>
+  );
+};
+
+export default SettingsScreen;
