@@ -2,6 +2,7 @@
 
 
 
+
 import React, { useState, useCallback, useEffect } from 'react';
 import { AppState } from './types';
 import type { Question, Answer, ReportData, PatientContext, SymptomIntensity, PreQuestionnaireAnswer, SymptomCharacteristics, ChatMessage, AppointmentPrepData, EmpathyLevel, ScenarioData, PreventionProfile, PreventionPlanData, NeuroTest, StabilityTestResult, CapillaryRefillTimeResult, SpeechDyspneaResult, TrackedSymptom, SymptomLogEntry, UserSettings, UserProfileData, Medication, RiskAnalysis, TrendAnalysis, TrainingProgress } from './types';
@@ -126,6 +127,10 @@ const App: React.FC = () => {
       apiKey: undefined,
   });
   const [userProfile, setUserProfile] = useState<UserProfileData | null>(null);
+  
+  // Loading state management
+  const [isLoadComplete, setIsLoadComplete] = useState(false);
+  const [onLoadContinue, setOnLoadContinue] = useState<(() => void) | null>(null);
 
   // Load persistent data from localStorage on initial mount
   useEffect(() => {
@@ -298,6 +303,8 @@ const App: React.FC = () => {
     setSymptomsToTrackSetup([]);
     setTrendAnalysis(null);
     setActiveMedicationId(null);
+    setIsLoadComplete(false);
+    setOnLoadContinue(null);
   }, []);
 
   const handleError = useCallback((errorMessage: string) => {
@@ -369,12 +376,18 @@ const App: React.FC = () => {
     characteristics: SymptomCharacteristics | null,
     preAnswers: PreQuestionnaireAnswer[]
   ) => {
+    setIsLoadComplete(false);
+    setOnLoadContinue(null);
     setAppState(AppState.GENERATING_QUESTIONS);
     try {
       const generatedQuestions = await generateQuestions(initialSymptoms, context, intensities, discomfort, mainSymptom, characteristics, preAnswers);
       if (generatedQuestions && generatedQuestions.length > 0) {
         setQuestions(generatedQuestions);
-        setAppState(AppState.QUESTIONNAIRE);
+        setIsLoadComplete(true);
+        setOnLoadContinue(() => () => {
+            setAppState(AppState.QUESTIONNAIRE);
+            setOnLoadContinue(null);
+        });
       } else {
         throw new Error("Le questionnaire reçu est vide.");
       }
@@ -386,18 +399,16 @@ const App: React.FC = () => {
   const handleContextSubmit = useCallback(async (context: PatientContext) => {
     setPatientContext(context);
 
-    // Determine if memory test is relevant at this early stage
+    // This is a quick operation, so no need for the full loader treatment
     const relevant = await shouldTriggerMemoryTest(initialSymptoms, context);
     setIsMemoryTestRelevant(relevant);
 
-    setAppState(AppState.GENERATING_QUESTIONS); // Use loader for symptom extraction
     try {
       const symptoms = await extractSymptoms(initialSymptoms);
       if (symptoms && symptoms.length > 0) {
         setExtractedSymptoms(symptoms);
         setAppState(AppState.SYMPTOM_INTENSITY);
       } else {
-        // No symptoms extracted, skip intensity and characteristics screens
         setSymptomIntensities([]);
         setOverallDiscomfort(null);
         setMainSymptom(null);
@@ -437,14 +448,19 @@ const App: React.FC = () => {
     setPreQuestionnaireAnswers(preAnswers);
 
     if (isMemoryTestRelevant) {
+        setIsLoadComplete(false);
+        setOnLoadContinue(null);
         setAppState(AppState.GENERATING_MEMORY_TEST_WORDS);
         try {
             const words = await generateMemoryTestWords();
             setMemoryTestWords(words);
-            setAppState(AppState.ANNOUNCE_MEMORY_TEST);
+            setIsLoadComplete(true);
+            setOnLoadContinue(() => () => {
+                setAppState(AppState.ANNOUNCE_MEMORY_TEST);
+                setOnLoadContinue(null);
+            });
         } catch (err) {
             console.error("Failed to generate memory test words, skipping test.", err);
-            // Skip test on error and go to questions
             await generateAndSetQuestions(patientContext, symptomIntensities, overallDiscomfort, mainSymptom, symptomCharacteristics, preAnswers);
         }
     } else {
@@ -461,6 +477,8 @@ const App: React.FC = () => {
   }, [patientContext, symptomIntensities, overallDiscomfort, mainSymptom, symptomCharacteristics, preQuestionnaireAnswers, generateAndSetQuestions, handleError]);
 
   const proceedToExclusionFilter = useCallback(async (currentAnswers: Answer[]) => {
+    setIsLoadComplete(false);
+    setOnLoadContinue(null);
     setAppState(AppState.GENERATING_EXCLUSION_SYMPTOMS);
     if (!patientContext) {
         handleError("Les informations contextuelles du patient sont manquantes.");
@@ -470,7 +488,11 @@ const App: React.FC = () => {
         const symptoms = await generateExclusionSymptoms(initialSymptoms, patientContext, symptomIntensities, overallDiscomfort, mainSymptom, symptomCharacteristics, preQuestionnaireAnswers, currentAnswers);
         if (symptoms && symptoms.length > 0) {
             setPotentialExclusionSymptoms(symptoms);
-            setAppState(AppState.EXCLUSION_FILTER);
+            setIsLoadComplete(true);
+            setOnLoadContinue(() => () => {
+                setAppState(AppState.EXCLUSION_FILTER);
+                setOnLoadContinue(null);
+            });
         } else {
             setExcludedSymptoms([]);
             await handleExclusionFilterComplete([]);
@@ -495,6 +517,8 @@ const App: React.FC = () => {
   }, [answers, proceedToExclusionFilter]);
 
   const generateAndSetPhotoPrompt = useCallback(async (currentExcludedSymptoms: string[], currentSelfExamResult: string | null, currentNeuroTestAnswers: NeuroTest[], currentCrtResult: CapillaryRefillTimeResult | null, currentRespiratoryRate: number | null, currentStabilityResult: StabilityTestResult | null, currentSpeechDyspneaResult: SpeechDyspneaResult | null) => {
+      setIsLoadComplete(false);
+      setOnLoadContinue(null);
       setAppState(AppState.GENERATING_PHOTO_PROMPT);
       if (!patientContext) {
           handleError("Les informations contextuelles du patient sont manquantes.");
@@ -508,11 +532,15 @@ const App: React.FC = () => {
               currentSpeechDyspneaResult
           );
           setPhotoPrompt(prompt || null);
-          setAppState(AppState.PHOTO_UPLOAD);
+          setIsLoadComplete(true);
+          setOnLoadContinue(() => () => {
+              setAppState(AppState.PHOTO_UPLOAD);
+              setOnLoadContinue(null);
+          });
       } catch (err) {
           console.error("Failed to generate photo prompt, continuing...", err);
           setPhotoPrompt(null);
-          setAppState(AppState.PHOTO_UPLOAD);
+          setAppState(AppState.PHOTO_UPLOAD); // Go to photo upload even on failure
       }
   }, [initialSymptoms, patientContext, answers, symptomIntensities, overallDiscomfort, mainSymptom, symptomCharacteristics, preQuestionnaireAnswers, handleError]);
 
@@ -522,6 +550,8 @@ const App: React.FC = () => {
   }, [excludedSymptoms, selfExamResult, neuroTestAnswers, crtResult, respiratoryRate, stabilityTestResult, generateAndSetPhotoPrompt]);
 
   const checkAndStartSpeechDyspneaTest = useCallback(async (currentStabilityResult: StabilityTestResult | null) => {
+    setIsLoadComplete(false);
+    setOnLoadContinue(null);
     setAppState(AppState.GENERATING_SPEECH_DYSPNEA_PROMPT);
     if (!patientContext) {
         handleError("Les informations contextuelles du patient sont manquantes.");
@@ -534,11 +564,18 @@ const App: React.FC = () => {
             neuroTestAnswers, crtResult, respiratoryRate, currentStabilityResult
         );
 
+        setIsLoadComplete(true);
         if (shouldRequest) {
-            setAppState(AppState.SPEECH_DYSPNEA_TEST);
+             setOnLoadContinue(() => () => {
+                setAppState(AppState.SPEECH_DYSPNEA_TEST);
+                setOnLoadContinue(null);
+            });
         } else {
             setSpeechDyspneaResult(null);
-            await handleSpeechDyspneaTestComplete(null);
+             setOnLoadContinue(() => () => {
+                handleSpeechDyspneaTestComplete(null);
+                setOnLoadContinue(null);
+            });
         }
     } catch (err) {
         console.error("Failed to check for speech dyspnea test, skipping.", err);
@@ -552,6 +589,8 @@ const App: React.FC = () => {
   }, [checkAndStartSpeechDyspneaTest]);
 
   const checkAndStartStabilityTest = useCallback(async (currentRespiratoryRate: number | null) => {
+    setIsLoadComplete(false);
+    setOnLoadContinue(null);
     setAppState(AppState.GENERATING_STABILITY_TEST_PROMPT);
     if (!patientContext) {
         handleError("Les informations contextuelles du patient sont manquantes.");
@@ -564,11 +603,18 @@ const App: React.FC = () => {
             neuroTestAnswers, crtResult, currentRespiratoryRate
         );
 
+        setIsLoadComplete(true);
         if (shouldRequest) {
-            setAppState(AppState.STABILITY_TEST);
+            setOnLoadContinue(() => () => {
+                setAppState(AppState.STABILITY_TEST);
+                setOnLoadContinue(null);
+            });
         } else {
             setStabilityTestResult(null);
-            await handleStabilityTestComplete(null);
+            setOnLoadContinue(() => () => {
+                handleStabilityTestComplete(null);
+                setOnLoadContinue(null);
+            });
         }
     } catch (err) {
         console.error("Failed to check for stability test, skipping.", err);
@@ -584,6 +630,8 @@ const App: React.FC = () => {
   }, [checkAndStartStabilityTest]);
 
   const checkAndStartRespiratoryTest = useCallback(async (currentNeuroTestAnswers: NeuroTest[], currentCrtResult: CapillaryRefillTimeResult | null) => {
+    setIsLoadComplete(false);
+    setOnLoadContinue(null);
     setAppState(AppState.GENERATING_RESPIRATORY_RATE_PROMPT);
     if (!patientContext) {
         handleError("Les informations contextuelles du patient sont manquantes.");
@@ -596,11 +644,18 @@ const App: React.FC = () => {
             currentNeuroTestAnswers, currentCrtResult
         );
 
+        setIsLoadComplete(true);
         if (shouldRequest) {
-            setAppState(AppState.RESPIRATORY_RATE_TEST);
+            setOnLoadContinue(() => () => {
+                setAppState(AppState.RESPIRATORY_RATE_TEST);
+                setOnLoadContinue(null);
+            });
         } else {
             setRespiratoryRate(null);
-            await checkAndStartStabilityTest(null);
+            setOnLoadContinue(() => () => {
+                checkAndStartStabilityTest(null);
+                setOnLoadContinue(null);
+            });
         }
     } catch (err) {
         console.error("Failed to check for respiratory rate, skipping.", err);
@@ -614,6 +669,8 @@ const App: React.FC = () => {
   }, [neuroTestAnswers, checkAndStartRespiratoryTest]);
 
   const checkAndStartCRTTest = useCallback(async (currentNeuroTestAnswers: NeuroTest[]) => {
+      setIsLoadComplete(false);
+      setOnLoadContinue(null);
       setAppState(AppState.GENERATING_CRT_PROMPT);
       if (!patientContext) {
           handleError("Les informations contextuelles du patient sont manquantes.");
@@ -625,11 +682,19 @@ const App: React.FC = () => {
               symptomCharacteristics, preQuestionnaireAnswers, excludedSymptoms, selfExamResult,
               currentNeuroTestAnswers
           );
+          
+          setIsLoadComplete(true);
           if (shouldRequest) {
-              setAppState(AppState.CRT_TEST);
+              setOnLoadContinue(() => () => {
+                  setAppState(AppState.CRT_TEST);
+                  setOnLoadContinue(null);
+              });
           } else {
               setCrtResult(null);
-              await checkAndStartRespiratoryTest(currentNeuroTestAnswers, null);
+              setOnLoadContinue(() => () => {
+                checkAndStartRespiratoryTest(currentNeuroTestAnswers, null);
+                setOnLoadContinue(null);
+              });
           }
       } catch (err) {
           console.error("Failed to check for CRT test, skipping.", err);
@@ -643,6 +708,8 @@ const App: React.FC = () => {
   }, [checkAndStartCRTTest]);
 
   const generateAndSetNeuroTest = useCallback(async (currentSelfExamResult: string | null) => {
+      setIsLoadComplete(false);
+      setOnLoadContinue(null);
       setAppState(AppState.GENERATING_NEURO_TESTS);
       if (!patientContext) {
           handleError("Les informations contextuelles du patient sont manquantes.");
@@ -662,13 +729,20 @@ const App: React.FC = () => {
               excludedSymptoms,
               currentSelfExamResult
           );
+          setIsLoadComplete(true);
           if (questions && questions.length > 0) {
               setNeuroTestQuestions(questions);
-              setAppState(AppState.NEURO_TESTS);
+              setOnLoadContinue(() => () => {
+                  setAppState(AppState.NEURO_TESTS);
+                  setOnLoadContinue(null);
+              });
           } else {
               setNeuroTestQuestions([]);
               setNeuroTestAnswers([]);
-              await checkAndStartCRTTest([]);
+              setOnLoadContinue(() => () => {
+                checkAndStartCRTTest([]);
+                setOnLoadContinue(null);
+              });
           }
       } catch (err) {
           console.error("Failed to generate neuro tests, skipping.", err);
@@ -684,6 +758,8 @@ const App: React.FC = () => {
 
   const handleExclusionFilterComplete = useCallback(async (selectedSymptoms: string[]) => {
       setExcludedSymptoms(selectedSymptoms);
+      setIsLoadComplete(false);
+      setOnLoadContinue(null);
       setAppState(AppState.GENERATING_SELF_EXAM_PROMPT);
 
       if (!patientContext) {
@@ -703,14 +779,20 @@ const App: React.FC = () => {
               preQuestionnaireAnswers,
               selectedSymptoms
           );
+          setIsLoadComplete(true);
           if (prompt) {
               setSelfExamPrompt(prompt);
-              setAppState(AppState.SELF_EXAM);
+              setOnLoadContinue(() => () => {
+                  setAppState(AppState.SELF_EXAM);
+                  setOnLoadContinue(null);
+              });
           } else {
-              // Skip self-exam
               setSelfExamPrompt(null);
               setSelfExamResult(null);
-              await generateAndSetNeuroTest(null);
+              setOnLoadContinue(() => () => {
+                generateAndSetNeuroTest(null);
+                setOnLoadContinue(null);
+              });
           }
       } catch (err) {
           console.error("Failed to generate self-exam prompt, skipping.", err);
@@ -724,6 +806,8 @@ const App: React.FC = () => {
         handleError("Les informations contextuelles du patient sont manquantes.");
         return;
     }
+    setIsLoadComplete(false);
+    setOnLoadContinue(null);
     setAppState(AppState.GENERATING_REPORT);
     try {
       const generatedReport = await generateReport(
@@ -735,7 +819,6 @@ const App: React.FC = () => {
       );
       setReport(generatedReport);
       
-      // After report generation, save context to profile if settings allow
       const { saveProfileData } = userSettings;
       const newProfileData: UserProfileData = {};
       if (saveProfileData.sexAndAge) {
@@ -754,7 +837,11 @@ const App: React.FC = () => {
         localStorage.setItem('medai-user-profile', JSON.stringify(newProfileData));
       }
       
-      setAppState(AppState.SYMPTOM_MONITORING);
+      setIsLoadComplete(true);
+      setOnLoadContinue(() => () => {
+          setAppState(AppState.SYMPTOM_MONITORING);
+          setOnLoadContinue(null);
+      });
     } catch (err) {
       handleError(err instanceof Error ? err.message : "Une erreur inconnue est survenue.");
     }
@@ -762,11 +849,18 @@ const App: React.FC = () => {
 
   const handleDirectDiagnosisSubmit = useCallback(async (diagnosis: string) => {
     setIsDirectFlow(true);
+    setIsLoadComplete(false);
+    setOnLoadContinue(null);
     setAppState(AppState.GENERATING_DIRECT_REPORT);
     try {
       const generatedReport = await generateDirectReport(diagnosis);
       setReport(generatedReport);
-      setAppState(AppState.REPORT);
+      setIsLoadComplete(true);
+      setOnLoadContinue(() => () => {
+          setAppState(AppState.REPORT);
+          setOnLoadContinue(null);
+          setIsDirectFlow(true); // Ensure it's set again after state change
+      });
     } catch (err) {
       handleError(err instanceof Error ? err.message : "Une erreur inconnue est survenue lors de la génération du rapport direct.");
       setIsDirectFlow(false); // reset on error
@@ -844,50 +938,51 @@ const App: React.FC = () => {
       case AppState.PRE_QUESTIONNAIRE:
         return <PreQuestionnaireScreen onSubmit={handlePreQuestionnaireSubmit} />;
       case AppState.GENERATING_MEMORY_TEST_WORDS:
-        return <Loader text="Génération des mots pour le test de mémoire..." />;
+        return <Loader text="Génération des mots pour le test de mémoire..." isComplete={isLoadComplete} onContinue={onLoadContinue || undefined} />;
       case AppState.ANNOUNCE_MEMORY_TEST:
         return <AnnounceMemoryTestScreen words={memoryTestWords} onContinue={handleMemoryTestAnnounced} />;
       case AppState.GENERATING_QUESTIONS:
-        return <Loader text="Génération du questionnaire personnalisé..." />;
+        return <Loader text="Génération du questionnaire personnalisé..." isComplete={isLoadComplete} onContinue={onLoadContinue || undefined} />;
       case AppState.QUESTIONNAIRE:
         return <QuestionnaireScreen questions={questions} onSubmit={handleQuestionnaireComplete} />;
       case AppState.MEMORY_TEST_INPUT:
         return <MemoryTestInputScreen onSubmit={handleMemoryTestInputComplete} />;
       case AppState.GENERATING_EXCLUSION_SYMPTOMS:
-        return <Loader text="Préparation du filtre d'exclusion..." />;
+        return <Loader text="Préparation du filtre d'exclusion..." isComplete={isLoadComplete} onContinue={onLoadContinue || undefined} />;
       case AppState.EXCLUSION_FILTER:
         return <ExclusionFilterScreen symptoms={potentialExclusionSymptoms} onSubmit={handleExclusionFilterComplete} onSkip={() => handleExclusionFilterComplete([])} />;
       case AppState.GENERATING_SELF_EXAM_PROMPT:
-        return <Loader text="Analyse pour un auto-examen pertinent..." />;
+        return <Loader text="Analyse pour un auto-examen pertinent..." isComplete={isLoadComplete} onContinue={onLoadContinue || undefined} />;
       case AppState.SELF_EXAM:
         return selfExamPrompt ? <SelfExamScreen prompt={selfExamPrompt} onSubmit={handleSelfExamComplete} onSkip={() => handleSelfExamComplete('')} /> : null;
       case AppState.GENERATING_NEURO_TESTS:
-        return <Loader text="Analyse de la pertinence des tests neurologiques..." />;
+        return <Loader text="Analyse de la pertinence des tests neurologiques..." isComplete={isLoadComplete} onContinue={onLoadContinue || undefined} />;
       case AppState.NEURO_TESTS:
         return <NeuroTestScreen questions={neuroTestQuestions} onSubmit={handleNeuroTestComplete} onSkip={() => handleNeuroTestComplete([])} />;
       case AppState.GENERATING_CRT_PROMPT:
-        return <Loader text="Analyse de la pertinence du test TRC..." />;
+        return <Loader text="Analyse de la pertinence du test TRC..." isComplete={isLoadComplete} onContinue={onLoadContinue || undefined} />;
       case AppState.CRT_TEST:
         return <CRTScreen onSubmit={handleCRTTestComplete} onSkip={() => handleCRTTestComplete(null)} />;
       case AppState.GENERATING_RESPIRATORY_RATE_PROMPT:
-        return <Loader text="Analyse de la pertinence de la mesure respiratoire..." />;
+        return <Loader text="Analyse de la pertinence de la mesure respiratoire..." isComplete={isLoadComplete} onContinue={onLoadContinue || undefined} />;
       case AppState.RESPIRATORY_RATE_TEST:
         return <RespiratoryRateScreen onSubmit={handleRespiratoryRateTestComplete} />;
       case AppState.GENERATING_STABILITY_TEST_PROMPT:
-        return <Loader text="Analyse de la pertinence du test de stabilité..." />;
+        return <Loader text="Analyse de la pertinence du test de stabilité..." isComplete={isLoadComplete} onContinue={onLoadContinue || undefined} />;
       case AppState.STABILITY_TEST:
         return <StabilityTestScreen onSubmit={handleStabilityTestComplete} onSkip={() => handleStabilityTestComplete(null)} />;
       case AppState.GENERATING_SPEECH_DYSPNEA_PROMPT:
-        return <Loader text="Analyse de la pertinence du test d'essoufflement..." />;
+        return <Loader text="Analyse de la pertinence du test d'essoufflement..." isComplete={isLoadComplete} onContinue={onLoadContinue || undefined} />;
       case AppState.SPEECH_DYSPNEA_TEST:
         return <SpeechDyspneaScreen onSubmit={handleSpeechDyspneaTestComplete} />;
       case AppState.GENERATING_PHOTO_PROMPT:
-        return <Loader text="Analyse de la pertinence d'une photo..." />;
+        return <Loader text="Analyse de la pertinence d'une photo..." isComplete={isLoadComplete} onContinue={onLoadContinue || undefined} />;
       case AppState.PHOTO_UPLOAD:
         return <PhotoUploadScreen onComplete={handlePhotoSubmit} photoPrompt={photoPrompt} />;
       case AppState.GENERATING_REPORT:
+        return <Loader text="L'IA analyse vos réponses et génère le rapport..." isComplete={isLoadComplete} onContinue={onLoadContinue || undefined} />;
       case AppState.GENERATING_DIRECT_REPORT:
-        return <Loader text="L'IA analyse vos réponses et génère le rapport..." />;
+        return <Loader text="L'IA génère le rapport informatif..." isComplete={isLoadComplete} onContinue={onLoadContinue || undefined} />;
       case AppState.SYMPTOM_MONITORING:
         return report ? <SymptomMonitoringScreen instructions={report.monitoringInstructions} onContinue={handleGoToReport} /> : null;
       case AppState.REPORT:
@@ -936,23 +1031,23 @@ const App: React.FC = () => {
           onEmpathyLevelChange={setEmpathyLevel}
         />;
       case AppState.GENERATING_APPOINTMENT_PREP:
-        return <Loader text="Génération de l'aide à la préparation..." />;
+        return <Loader text="Génération de l'aide à la préparation..." isComplete={isLoadComplete} onContinue={onLoadContinue || undefined} />;
       case AppState.MEDICAL_APPOINTMENT_PREP:
         return appointmentPrepData ? <MedicalAppointmentPrepScreen prepData={appointmentPrepData} onBackToReport={() => setAppState(AppState.REPORT)} onGoToSummary={() => {}} /* Placeholder */ /> : null;
       case AppState.GENERATING_SCENARIOS:
-        return <Loader text="Génération des scénarios d'évolution..." />;
+        return <Loader text="Génération des scénarios d'évolution..." isComplete={isLoadComplete} onContinue={onLoadContinue || undefined} />;
       case AppState.SCENARIO_SIMULATOR:
         return scenarioData ? <ScenarioSimulatorScreen scenarios={scenarioData.scenarios} onBackToReport={() => setAppState(AppState.REPORT)} /> : null;
       case AppState.PREVENTION_PLAN_PROFILE:
         return <PreventionProfileScreen onSubmit={() => {}} /* Placeholder */ onBackToLanding={handleReset} />;
       case AppState.GENERATING_PREVENTION_PLAN:
-        return <Loader text="Génération de votre plan de prévention personnalisé..." />;
+        return <Loader text="Génération de votre plan de prévention personnalisé..." isComplete={isLoadComplete} onContinue={onLoadContinue || undefined} />;
       case AppState.PREVENTION_PLAN_REPORT:
         return (preventionPlan && riskAnalysis) ? <PreventionPlanReportScreen plan={preventionPlan} riskAnalysis={riskAnalysis} onReset={handleReset} /> : null;
       case AppState.SYMPTOM_JOURNAL_SETUP:
         return <SymptomJournalSetupScreen suggestedSymptoms={symptomsToTrackSetup} onSubmit={() => {}} /* Placeholder */ onBackToReport={() => setAppState(AppState.REPORT)} />;
       case AppState.ANALYZING_SYMPTOM_TRENDS:
-          return <Loader text="L'IA analyse les tendances de vos symptômes..." />;
+          return <Loader text="L'IA analyse les tendances de vos symptômes..." isComplete={isLoadComplete} onContinue={onLoadContinue || undefined} />;
       case AppState.SYMPTOM_JOURNAL:
           return <SymptomJournalScreen 
               journalData={journalData} 
@@ -967,7 +1062,7 @@ const App: React.FC = () => {
       case AppState.PILLBOX_ADD_MEDICATION:
         return <AddMedicationScreen onAddMedication={() => {}} /* Placeholder */ onBack={() => setAppState(AppState.PILLBOX)} />;
       case AppState.GENERATING_SIDE_EFFECTS:
-        return <Loader text="Recherche des effets secondaires..." />;
+        return <Loader text="Recherche des effets secondaires..." isComplete={isLoadComplete} onContinue={onLoadContinue || undefined} />;
       case AppState.MEDICATION_DETAIL:
         const activeMed = pillboxData.find(m => m.id === activeMedicationId);
         return activeMed ? <MedicationDetailScreen medication={activeMed} onUpdateSideEffectNotes={() => {}} /* Placeholder */ onBack={() => setAppState(AppState.PILLBOX)} /> : null;

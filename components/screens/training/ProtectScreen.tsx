@@ -1,5 +1,6 @@
 
 
+
 import React, { useState, useEffect } from 'react';
 import type { TrainingScenario } from '../../../types';
 import { generateTrainingScenarios } from '../../../services/geminiService';
@@ -165,9 +166,11 @@ const ProtectScreen: React.FC<ProtectScreenProps> = ({ onComplete, onBack }) => 
                     </>
                 );
             case 'scenarioLoading':
-                return <Loader text="Chargement des scénarios..." />;
+// FIX: The 'isComplete' prop was missing on the Loader component.
+                return <Loader text="Chargement des scénarios..." isComplete={false} />;
             case 'scenarioActive':
-                if (!currentScenario) return <Loader text="Chargement..." />;
+// FIX: The 'isComplete' prop was missing on the Loader component.
+                if (!currentScenario) return <Loader text="Chargement..." isComplete={false} />;
                 const currentQuestion = currentScenario.questions[currentQuestionIndex];
                 return (
                     <div className="w-full">
