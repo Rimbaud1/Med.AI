@@ -129,6 +129,216 @@ const educationalContent = [
             { title: "Prophylaxie", text: "L'ensemble des mesures visant à prévenir l'apparition d'une maladie (ex: vaccination)." }
         ]
     },
+    {
+        category: "Anatomie Incroyable",
+        color: "text-cyan-300",
+        items: [
+            { title: "Acide gastrique puissant", text: "L'acide dans votre estomac est assez fort pour dissoudre une lame de rasoir." },
+            { title: "Le foie, un super-organe", text: "C'est le seul organe humain capable de se régénérer presque entièrement, même après avoir perdu 75% de sa masse." },
+            { title: "Un squelette neuf tous les 10 ans", text: "Votre corps remplace constamment les vieilles cellules osseuses par des nouvelles, renouvelant ainsi votre squelette environ tous les 10 ans." },
+            { title: "La force de la mâchoire", text: "Le muscle masséter est le muscle le plus puissant du corps par rapport à sa taille, capable d'exercer une force de plus de 90 kg." },
+            { title: "Une empreinte unique sur la langue", text: "Tout comme les empreintes digitales, chaque personne possède une empreinte linguale qui lui est propre." },
+            { title: "Plus fort que l'acier", text: "À poids égal, l'os humain est plus résistant que l'acier. Un bloc d'os de la taille d'une boîte d'allumettes peut supporter 9 tonnes." },
+            { title: "Le petit doigt, un grand contributeur", text: "Votre petit doigt (auriculaire) fournit environ 50% de la force de préhension de votre main." },
+            { title: "Des papilles qui se renouvellent", text: "Vos papilles gustatives ont une durée de vie très courte, d'environ 10 à 14 jours, avant d'être remplacées." },
+            { title: "L'intestin, une surface de court de tennis", text: "Si vous dépliiez toutes les villosités de votre intestin grêle, sa surface couvrirait celle d'un court de tennis." },
+            { title: "Un GPS interne", text: "Votre oreille interne abrite le système vestibulaire, qui agit comme un gyroscope et vous donne le sens de l'équilibre et de l'orientation spatiale." },
+            { title: "Une usine à salive", text: "Vous produisez assez de salive au cours de votre vie pour remplir deux piscines." },
+            { title: "Le hoquet, un mystère ancien", text: "Le hoquet pourrait être un vestige évolutionnaire de nos ancêtres amphibiens, lié à la respiration branchiale." },
+            { title: "Une peau neuve chaque mois", text: "Vous perdez des dizaines de milliers de cellules de peau chaque minute. Votre couche externe de peau est entièrement remplacée environ tous les mois." },
+            { title: "Un cœur infatigable", text: "Même au repos, les muscles de votre cœur travaillent deux fois plus dur que les muscles des jambes d'un sprinteur en pleine course." },
+            { title: "Des larmes à plusieurs facettes", text: "Les larmes de joie, de tristesse ou d'irritation (causées par un oignon) ont des compositions chimiques distinctes." }
+        ]
+    },
+    {
+        category: "Histoire de la Médecine",
+        color: "text-lime-300",
+        items: [
+            { title: "La première vaccination", text: "En 1796, Edward Jenner a utilisé le virus de la variole bovine (la vaccine) pour immuniser un jeune garçon contre la variole humaine, bien plus mortelle." },
+            { title: "L'hygiène qui sauve des vies", text: "Dans les années 1840, le Dr Ignace Semmelweis a découvert que le simple fait pour les médecins de se laver les mains réduisait drastiquement la mortalité en maternité." },
+            { title: "La découverte accidentelle de la pénicilline", text: "En 1928, Alexander Fleming a remarqué qu'une moisissure avait contaminé une de ses boîtes de Petri et tué les bactéries environnantes. C'était la naissance du premier antibiotique." },
+            { title: "L'invention du stéthoscope", text: "En 1816, René Laennec a roulé une feuille de papier pour mieux entendre le cœur d'une patiente, inventant ainsi le premier stéthoscope et révolutionnant le diagnostic." },
+            { title: "La révolution de l'anesthésie", text: "Avant 1846, les chirurgies étaient des épreuves de torture. L'utilisation de l'éther par William T.G. Morton a permis de réaliser des opérations sans douleur." },
+            { title: "Les rayons X, voir à travers le corps", text: "Wilhelm Röntgen a découvert les rayons X en 1895, et la première image radiographique fut celle de la main de sa femme, montrant ses os et son alliance." },
+            { title: "La fin de la théorie des miasmes", text: "Grâce à Louis Pasteur et Robert Koch, on a compris que les maladies étaient causées par des germes, et non par de 'mauvais airs' ou miasmes." },
+            { title: "Les groupes sanguins rendent les transfusions sûres", text: "En 1901, Karl Landsteiner a découvert les groupes sanguins A, B et O, ce qui a permis d'éviter les rejets mortels lors des transfusions." },
+            { title: "La trépanation préhistorique", text: "La plus ancienne intervention chirurgicale connue est la trépanation (percer un trou dans le crâne), pratiquée il y a plus de 7000 ans, et certains patients y survivaient !" },
+            { title: "La première greffe de cœur", text: "En 1967, le chirurgien sud-africain Christiaan Barnard a réalisé la première transplantation cardiaque humaine réussie." },
+            { title: "L'insuline, un tournant pour le diabète", text: "En 1921, Banting et Best ont isolé l'insuline, transformant le diabète de type 1, alors mortel, en une maladie chronique gérable." },
+            { title: "L'éradication d'une maladie", text: "Grâce à une campagne de vaccination mondiale, la variole, qui a tué des centaines de millions de personnes, a été déclarée officiellement éradiquée en 1980." },
+            { title: "La pilule contraceptive", text: "Introduite dans les années 1960, elle a eu un impact social et démographique majeur, donnant aux femmes un contrôle sans précédent sur leur fertilité." },
+            { title: "La découverte de la structure de l'ADN", text: "En 1953, Watson et Crick ont décrit la structure en double hélice de l'ADN, ouvrant la voie à la génétique moderne et à la thérapie génique." },
+            { title: "Les 'chasseurs de microbes'", text: "Au 19ème siècle, des pionniers comme John Snow ont utilisé la cartographie pour prouver que le choléra se propageait par l'eau contaminée à Londres, jetant les bases de l'épidémiologie." }
+        ]
+    },
+    {
+        category: "Santé Mentale en Clair",
+        color: "text-fuchsia-300",
+        items: [
+            { title: "L'anxiété, une alarme utile", text: "L'anxiété est une réaction normale au stress. Elle devient un trouble lorsqu'elle est excessive, persistante et interfère avec la vie quotidienne." },
+            { title: "Le 'blues de l'hiver'", text: "La dépression saisonnière (ou trouble affectif saisonnier) est une forme de dépression liée au manque de lumière naturelle en automne et en hiver." },
+            { title: "Le TDAH n'est pas qu'une question d'agitation", text: "Le Trouble du Déficit de l'Attention avec ou sans Hyperactivité peut aussi se manifester par une difficulté à se concentrer, une désorganisation et une impulsivité." },
+            { title: "Le TOC : plus que de l'organisation", text: "Le Trouble Obsessionnel-Compulsif se caractérise par des pensées intrusives (obsessions) qui causent de l'angoisse, et des rituels (compulsions) pour la soulager." },
+            { title: "La psychothérapie, c'est pour tout le monde", text: "Consulter un psychologue n'est pas un signe de faiblesse, mais une démarche proactive pour prendre soin de sa santé mentale, comme on le fait pour sa santé physique." },
+            { title: "Le syndrome de l'imposteur", text: "C'est un sentiment persistant de ne pas mériter son succès, malgré des preuves objectives de compétence. C'est très courant et non un diagnostic officiel." },
+            { title: "Le 'burnout' ou épuisement professionnel", text: "Ce n'est pas juste de la fatigue. C'est un état d'épuisement émotionnel, physique et mental causé par un stress excessif et prolongé au travail." },
+            { title: "La bipolarité, des montagnes russes émotionnelles", text: "Le trouble bipolaire se caractérise par des alternances d'épisodes de dépression (périodes 'basses') et d'épisodes de manie ou d'hypomanie (périodes 'hautes')." },
+            { title: "L'ESPT : une blessure invisible", text: "L'État de Stress Post-Traumatique peut survenir après un événement choquant. Il se manifeste par des flashbacks, des cauchemars et une hypervigilance." },
+            { title: "La pleine conscience (mindfulness)", text: "C'est une pratique qui consiste à porter intentionnellement son attention sur le moment présent, sans jugement. C'est un outil efficace pour réduire le stress." },
+            { title: "L'importance de la 'charge mentale'", text: "C'est le fardeau invisible de la planification et de l'organisation des tâches (familiales, professionnelles...). Son déséquilibre peut être une source majeure de stress." },
+            { title: "Les troubles alimentaires ne sont pas un choix", text: "L'anorexie, la boulimie et l'hyperphagie sont des maladies mentales complexes avec des causes biologiques, psychologiques et sociales." },
+            { title: "Le 'self-care' n'est pas égoïste", text: "Prendre du temps pour soi pour se ressourcer est essentiel pour maintenir une bonne santé mentale et pouvoir prendre soin des autres." },
+            { title: "Le deuil est un processus unique", text: "Il n'y a pas de 'bonne' façon de faire son deuil. Les étapes (déni, colère, etc.) ne sont pas linéaires et varient pour chaque individu." },
+            { title: "Les phobies, des peurs intenses", text: "Une phobie est une peur irrationnelle et intense d'un objet ou d'une situation spécifique, qui pousse à l'évitement et peut être très handicapante." }
+        ]
+    },
+    {
+        category: "Le Sommeil, cet Allié",
+        color: "text-violet-300",
+        items: [
+            { title: "Les cycles du sommeil", text: "Une nuit de sommeil est composée de plusieurs cycles d'environ 90 minutes, alternant entre sommeil léger, profond et paradoxal (rêves)." },
+            { title: "Le sommeil paradoxal", text: "C'est durant cette phase que vous rêvez le plus. Votre cerveau est très actif, mais vos muscles sont paralysés pour vous empêcher de 'vivre' vos rêves." },
+            { title: "Manquer de sommeil affecte votre jugement", text: "Être éveillé pendant 18 heures d'affilée peut altérer vos capacités de la même manière qu'un taux d'alcoolémie de 0,05%." },
+            { title: "Le 'nettoyage' du cerveau", text: "Pendant le sommeil profond, votre cerveau active un système de nettoyage qui élimine les déchets métaboliques accumulés pendant la journée." },
+            { title: "La lumière bleue, ennemie du sommeil", text: "La lumière bleue des écrans (téléphones, tablettes) supprime la production de mélatonine, l'hormone qui vous aide à vous endormir." },
+            { title: "La sieste parfaite", text: "Une 'sieste flash' de 10 à 20 minutes est idéale pour améliorer la vigilance et les performances sans causer d'inertie du sommeil (sensation d'être groggy)." },
+            { title: "On ne 'rattrape' pas le sommeil", text: "Même si une grasse matinée peut aider, une seule nuit blanche peut prendre plusieurs jours pour que le corps s'en remette complètement." },
+            { title: "Le sport, oui, mais pas trop tard", text: "L'exercice régulier améliore la qualité du sommeil, mais une activité intense juste avant de se coucher peut augmenter votre température corporelle et retarder l'endormissement." },
+            { title: "La caféine a une longue durée de vie", text: "La demi-vie de la caféine est d'environ 5-6 heures. Un café bu à 16h signifie qu'un quart de la caféine est encore dans votre corps à 22h." },
+            { title: "L'apnée du sommeil", text: "C'est un trouble où la respiration s'arrête et reprend plusieurs fois pendant le sommeil. Les ronflements forts en sont un signe courant." },
+            { title: "Dormir au frais", text: "La température idéale pour dormir se situe entre 16 et 19°C. Votre corps a besoin de baisser sa température interne pour s'endormir." },
+            { title: "Le mythe des 8 heures", text: "Les besoins en sommeil varient d'une personne à l'autre. La plupart des adultes ont besoin de 7 à 9 heures, mais l'important est de se sentir reposé." },
+            { title: "Les rêves nous aident à gérer nos émotions", text: "Rêver pourrait être une façon pour le cerveau de traiter les expériences émotionnelles de la journée dans un environnement 'sûr'." },
+            { title: "L'alcool perturbe le sommeil", text: "Même si l'alcool peut aider à s'endormir, il perturbe la seconde moitié de la nuit, fragmentant le sommeil et réduisant sa qualité réparatrice." },
+            { title: "La régularité est la clé", text: "Se coucher et se lever à la même heure tous les jours, même le week-end, est l'un des moyens les plus efficaces pour améliorer son sommeil." }
+        ]
+    },
+    {
+        category: "L'Exercice & ses Secrets",
+        color: "text-orange-300",
+        items: [
+            { title: "Un antidépresseur naturel", text: "L'exercice régulier a prouvé son efficacité pour réduire les symptômes de la dépression légère à modérée, parfois autant qu'un traitement médicamenteux." },
+            { title: "Booster le cerveau", text: "L'activité physique augmente le flux sanguin vers le cerveau et stimule la création de nouvelles connexions neuronales, améliorant la mémoire et la concentration." },
+            { title: "Plus de mitochondries", text: "L'endurance crée de nouvelles mitochondries dans vos cellules. Ce sont les 'centrales énergétiques' qui produisent votre énergie au quotidien." },
+            { title: "La marche, un médicament sous-estimé", text: "Une marche rapide de 30 minutes par jour peut réduire de moitié le risque de développer un diabète de type 2." },
+            { title: "Les muscles, des brûleurs de sucre", text: "Avoir plus de masse musculaire aide à réguler la glycémie, car les muscles sont de grands consommateurs de glucose." },
+            { title: "Le 'Afterburn Effect'", text: "Après une séance de sport intense (HIIT), votre métabolisme reste élevé pendant plusieurs heures, continuant à brûler des calories même au repos." },
+            { title: "Renforcer les os", text: "Les exercices avec impact (course, saut) ou de résistance (musculation) stimulent les cellules osseuses et aident à prévenir l'ostéoporose." },
+            { title: "Mieux vaut peu que rien du tout", text: "Même 10 minutes d'activité modérée ont des bénéfices pour la santé. L'important est de rompre la sédentarité." },
+            { title: "L'hydratation est clé", text: "Perdre seulement 2% de votre poids en eau (transpiration) peut diminuer vos performances physiques de manière significative." },
+            { title: "Les courbatures ne sont pas un signe de progrès", text: "Elles indiquent des micro-déchirures musculaires, souvent dues à un nouvel exercice. Un bon entraînement n'est pas forcément suivi de courbatures." },
+            { title: "La 'mémoire musculaire'", text: "Si vous arrêtez le sport et reprenez plus tard, vous retrouverez votre niveau plus rapidement. Vos cellules musculaires conservent des 'noyaux' supplémentaires." },
+            { title: "Le sport pour mieux dormir", text: "L'activité physique régulière aide à s'endormir plus vite et améliore la qualité du sommeil profond, le plus réparateur." },
+            { title: "Le gainage, plus qu'un ventre plat", text: "Les exercices de gainage (planche) renforcent les muscles profonds du tronc, ce qui améliore la posture et prévient le mal de dos." },
+            { title: "La souplesse, c'est la jeunesse", text: "Travailler sa souplesse avec des étirements maintient la mobilité des articulations, prévient les blessures et améliore la circulation." },
+            { title: "Le sport en plein air, un double bénéfice", text: "S'entraîner à l'extérieur combine les bienfaits de l'exercice avec ceux de la nature (réduction du stress) et de la lumière du soleil (vitamine D)." }
+        ]
+    },
+    {
+        category: "Décoder ses Analyses Sanguines",
+        color: "text-rose-300",
+        items: [
+            { title: "NFS (Numération Formule Sanguine)", text: "C'est la 'carte d'identité' de votre sang. Elle compte les globules rouges, les globules blancs et les plaquettes." },
+            { title: "Globules Rouges (Hématies)", text: "Ils transportent l'oxygène. Un taux bas peut indiquer une anémie. L'hémoglobine est leur principal composant." },
+            { title: "Globules Blancs (Leucocytes)", text: "Ce sont les soldats de votre système immunitaire. Un taux élevé peut signaler une infection ou une inflammation." },
+            { title: "Plaquettes (Thrombocytes)", text: "Elles sont essentielles à la coagulation du sang. Un taux bas peut entraîner des saignements excessifs." },
+            { title: "CRP (Protéine C-Réactive)", text: "C'est un marqueur de l'inflammation. Son taux augmente rapidement en cas d'infection bactérienne ou de maladie inflammatoire." },
+            { title: "Glycémie à jeun", text: "Mesure le taux de sucre dans le sang après une nuit de jeûne. C'est un test clé pour le dépistage du diabète." },
+            { title: "Cholestérol : HDL vs LDL", text: "Le HDL est le 'bon' cholestérol (il nettoie les artères), le LDL est le 'mauvais' (il peut les boucher). On regarde surtout le ratio entre les deux." },
+            { title: "Triglycérides", text: "C'est une autre forme de graisse dans le sang. Un taux élevé est souvent lié à l'alimentation (sucre, alcool) et au manque d'exercice." },
+            { title: "Créatinine", text: "C'est un déchet produit par les muscles. Son taux dans le sang est un excellent indicateur de la fonction de filtration de vos reins." },
+            { title: "Transaminases (ASAT/ALAT)", text: "Ce sont des enzymes du foie. Un taux élevé peut indiquer une souffrance ou une inflammation du foie (hépatite, stéatose...)." },
+            { title: "TSH (Thyréostimuline)", text: "C'est l'hormone qui stimule la thyroïde. Son dosage est le test principal pour vérifier si votre thyroïde fonctionne normalement, trop (hyperthyroïdie) ou pas assez (hypothyroïdie)." },
+            { title: "Ferritine", text: "C'est la protéine qui stocke le fer dans votre corps. Un taux bas est le premier signe d'une carence en fer, avant même l'apparition de l'anémie." },
+            { title: "Vitamine D (25-OH-vitamine D)", text: "Essentielle pour la santé des os et l'immunité. Une carence est très fréquente, surtout en hiver." },
+            { title: "VS (Vitesse de Sédimentation)", text: "Un marqueur d'inflammation plus ancien et moins spécifique que la CRP, mais toujours utilisé pour suivre certaines maladies chroniques." },
+            { title: "'Être dans les normes'", text: "Les valeurs de référence peuvent légèrement varier d'un laboratoire à l'autre. Une valeur un peu en dehors des normes n'est pas toujours synonyme de maladie." }
+        ]
+    },
+    {
+        category: "Premiers Secours : Le Geste Juste",
+        color: "text-blue-300",
+        items: [
+            { title: "Coupure légère", text: "Nettoyez la plaie à l'eau et au savon, désinfectez avec un antiseptique, puis protégez avec un pansement." },
+            { title: "Saignement de nez", text: "Asseyez-vous, penchez la tête EN AVANT (jamais en arrière), et comprimez la narine qui saigne pendant 10 minutes sans interruption." },
+            { title: "Brûlure simple", text: "Refroidissez immédiatement la zone sous l'eau tiède (environ 15°C) pendant au moins 15 minutes. N'appliquez jamais de glace." },
+            { title: "Piqûre d'insecte (non allergique)", text: "Retirez le dard s'il est présent (sans le pincer), désinfectez et appliquez du froid pour soulager la douleur et le gonflement." },
+            { title: "Coup ou contusion ('bleu')", text: "Appliquez de la glace (dans un linge) pendant 15-20 minutes pour limiter le gonflement et l'hématome." },
+            { title: "Écharde", text: "Désinfectez la zone, puis retirez délicatement l'écharde avec une pince à épiler désinfectée, dans le sens où elle est entrée. Redésinfectez après." },
+            { title: "Perte de connaissance (la victime respire)", text: "Mettez la victime en Position Latérale de Sécurité (PLS) pour libérer les voies aériennes et appelez le 15." },
+            { title: "Malaise vagal", text: "Allongez la personne et surélevez ses jambes pour favoriser le retour du sang vers le cerveau. Aérez la pièce." },
+            { title: "Entorse de la cheville", text: "Appliquez le protocole GREC : Glace, Repos, Élévation, Compression (avec un bandage)." },
+            { title: "Objet dans l'œil", text: "Ne frottez pas. Rincez abondamment l'œil avec de l'eau ou du sérum physiologique, du coin interne vers le coin externe." },
+            { title: "Ampoule au pied", text: "Ne la percez pas si elle n'est pas douloureuse, elle protège la peau en dessous. Si elle est percée, désinfectez et protégez avec un pansement spécial." },
+            { title: "Coup de soleil", text: "Refroidissez la peau avec des douches ou des compresses d'eau fraîche, hydratez-vous abondamment et appliquez une crème apaisante." },
+            { title: "Intoxication alimentaire (légère)", text: "Reposez-vous, buvez beaucoup d'eau par petites gorgées pour éviter la déshydratation. Mangez léger (riz, compote) quand l'appétit revient." },
+            { title: "La chaîne de survie", text: "Les 4 maillons essentiels : Alerte précoce, gestes de premiers secours, défibrillation précoce, soins médicaux spécialisés." },
+            { title: "Le contenu d'une trousse de secours", text: "Antiseptique, pansements, compresses stériles, sparadrap, ciseaux, pince à épiler, sérum physiologique, gants, couverture de survie." }
+        ]
+    },
+    {
+        category: "Le Cerveau, cet Inconnu",
+        color: "text-teal-300",
+        items: [
+            { title: "Un grand consommateur d'énergie", text: "Votre cerveau représente environ 2% de votre poids corporel, mais il consomme 20-25% de l'oxygène et des calories que vous ingérez." },
+            { title: "Pas de récepteurs de douleur", text: "Le cerveau lui-même ne peut pas sentir la douleur. Les maux de tête proviennent des nerfs et vaisseaux sanguins qui l'entourent." },
+            { title: "Un disque dur quasi illimité", text: "La capacité de stockage du cerveau humain est considérée comme pratiquement illimitée, estimée à environ 2,5 pétaoctets." },
+            { title: "La neuroplasticité", text: "Votre cerveau n'est pas figé. Il peut se réorganiser en créant de nouvelles connexions neuronales tout au long de votre vie, c'est la base de l'apprentissage." },
+            { title: "Deux hémisphères, un travail d'équipe", text: "Le mythe du 'cerveau gauche logique' et 'cerveau droit créatif' est une simplification excessive. Les deux hémisphères collaborent constamment." },
+            { title: "Plus rapide que la lumière ?", text: "L'information dans le cerveau voyage à différentes vitesses. Certains signaux peuvent atteindre plus de 400 km/h." },
+            { title: "Le cerveau est principalement fait de graisse", text: "Après l'eau, le cerveau est l'organe le plus gras du corps, avec près de 60% de sa masse sèche composée de lipides." },
+            { title: "Le multitâche est un mythe", text: "Votre cerveau ne peut pas se concentrer sur deux tâches complexes en même temps. Il bascule rapidement de l'une à l'autre, ce qui réduit l'efficacité." },
+            { title: "Le 'nettoyage' nocturne", text: "Pendant le sommeil profond, le système glymphatique de votre cerveau s'active pour évacuer les toxines accumulées durant la journée." },
+            { title: "Les neurones miroirs", text: "Ce sont des neurones qui s'activent de la même manière lorsque vous effectuez une action ou que vous observez quelqu'un d'autre la faire. Ils sont cruciaux pour l'empathie." },
+            { title: "L'effet placebo", text: "La simple croyance en l'efficacité d'un traitement peut déclencher des changements biochimiques réels dans le cerveau, comme la libération d'endorphines." },
+            { title: "La musique et le cerveau", text: "Écouter de la musique active de nombreuses zones du cerveau, y compris celles liées à l'émotion, la mémoire et le mouvement." },
+            { title: "Un développement jusqu'à 25 ans", text: "Le cortex préfrontal, responsable de la prise de décision et du contrôle des impulsions, n'atteint sa pleine maturité que vers l'âge de 25 ans." },
+            { title: "Le rire, un exercice cérébral", text: "Rire active plusieurs régions du cerveau et libère des endorphines, les 'hormones du bonheur'." },
+            { title: "Le 'bruit blanc' neuronal", text: "Même au repos, votre cerveau maintient un niveau constant d'activité électrique de fond, un peu comme un ordinateur en veille." }
+        ]
+    },
+    {
+        category: "Le Microbiote Intestinal",
+        color: "text-emerald-300",
+        items: [
+            { title: "Plus de bactéries que de cellules", text: "Vous hébergez plus de cellules bactériennes dans votre intestin que de cellules humaines dans tout votre corps." },
+            { title: "Un 'deuxième cerveau'", text: "Votre intestin contient plus de 100 millions de neurones, plus que la moelle épinière. Il communique en permanence avec votre cerveau via le nerf vague." },
+            { title: "La sérotonine, hormone du bonheur", text: "Environ 90% de la sérotonine de votre corps est produite dans l'intestin, influençant votre humeur et votre bien-être." },
+            { title: "Une empreinte digitale bactérienne", text: "La composition de votre microbiote est unique, comme une empreinte digitale. Elle est influencée par votre génétique, votre alimentation et votre environnement." },
+            { title: "L'éducation du système immunitaire", text: "Votre microbiote 'éduque' votre système immunitaire dès la naissance, lui apprenant à distinguer les amis (bactéries utiles) des ennemis (pathogènes)." },
+            { title: "Les prébiotiques : la nourriture des bonnes bactéries", text: "Ce sont des fibres que vous ne digérez pas, mais qui nourrissent les bactéries bénéfiques. On les trouve dans l'ail, l'oignon, les poireaux, les bananes..." },
+            { title: "Les probiotiques : des renforts directs", text: "Ce sont des micro-organismes vivants (bonnes bactéries) que l'on trouve dans les yaourts, le kéfir, la choucroute, et qui peuvent enrichir votre flore." },
+            { title: "Les antibiotiques, une 'bombe' pour la flore", text: "S'ils sont nécessaires pour combattre les infections, les antibiotiques peuvent aussi détruire une partie de votre microbiote. Il faut parfois des mois pour qu'il se reconstitue." },
+            { title: "Le lien avec le poids", text: "La composition du microbiote peut influencer la façon dont vous stockez les graisses et régulez votre appétit." },
+            { title: "Stress et intestin", text: "Le stress peut altérer la composition de votre microbiote, ce qui peut en retour augmenter votre sensibilité au stress. C'est un cercle vicieux." },
+            { title: "Les 'psychobiotiques'", text: "C'est un terme émergent pour désigner les probiotiques qui ont un effet bénéfique sur la santé mentale en agissant sur l'axe intestin-cerveau." },
+            { title: "La diversité est la clé", text: "Un microbiote sain est un microbiote diversifié. Une alimentation variée, riche en fibres et en végétaux, est le meilleur moyen de l'encourager." },
+            { title: "Le rôle dans les allergies", text: "Un déséquilibre du microbiote (dysbiose) est de plus en plus lié au développement d'allergies et de maladies auto-immunes." },
+            { title: "La fermentation, un processus bénéfique", text: "Vos bactéries intestinales fermentent les fibres et produisent des composés bénéfiques (comme le butyrate) qui nourrissent les cellules de votre côlon." },
+            { title: "L'impact du sport", text: "L'exercice physique régulier favorise la diversité et la santé de votre microbiote intestinal." }
+        ]
+    },
+    {
+        category: "Zoom sur les Vitamines & Minéraux",
+        color: "text-yellow-300",
+        items: [
+            { title: "Vitamine C : plus qu'un anti-rhume", text: "Essentielle pour la production de collagène (peau, articulations), l'absorption du fer et comme puissant antioxydant. On la trouve dans les agrumes, poivrons, kiwis." },
+            { title: "Vitamine D : la 'vitamine du soleil'", text: "Cruciale pour l'absorption du calcium et la santé osseuse. Notre corps la fabrique en s'exposant au soleil. Carence fréquente en hiver." },
+            { title: "Fer : le transporteur d'oxygène", text: "Composant clé de l'hémoglobine dans les globules rouges. Une carence entraîne anémie et fatigue. Sources : viande rouge, lentilles, épinards." },
+            { title: "Magnésium : l'anti-stress naturel", text: "Impliqué dans plus de 300 réactions enzymatiques. Aide à la relaxation musculaire, à la gestion du stress et au sommeil. Sources : chocolat noir, amandes, légumes verts." },
+            { title: "Vitamines B : le complexe énergétique", text: "Un groupe de 8 vitamines essentielles à la production d'énergie, à la fonction cérébrale et à la formation des globules rouges." },
+            { title: "Calcium : pas seulement pour les os", text: "Indispensable à la contraction musculaire, à la transmission nerveuse et à la coagulation, en plus de son rôle dans la solidité des os et des dents." },
+            { title: "Vitamine A : la vision et la peau", text: "Importante pour la vision (surtout nocturne), le système immunitaire et la santé de la peau. Sources : carottes (bêta-carotène), foie, produits laitiers." },
+            { title: "Zinc : le gardien de l'immunité", text: "Minéral crucial pour la fonction immunitaire, la cicatrisation et la synthèse de l'ADN. On le trouve dans les huîtres, la viande, les graines de courge." },
+            { title: "Iode : le carburant de la thyroïde", text: "Essentiel à la production des hormones thyroïdiennes qui régulent le métabolisme. Source principale : sel iodé, produits de la mer." },
+            { title: "Vitamine K : la coagulation sanguine", text: "Joue un rôle vital dans la coagulation du sang et participe aussi à la santé des os. Sources : légumes verts à feuilles (chou frisé, épinards)." },
+            { title: "Potassium : l'équilibre des fluides", text: "Électrolyte qui aide à maintenir l'équilibre hydrique, la fonction nerveuse et la pression artérielle. Sources : bananes, pommes de terre, avocats." },
+            { title: "Sélénium : un puissant antioxydant", text: "Oligo-élément qui protège les cellules du stress oxydatif et est important pour la fonction thyroïdienne. La noix du Brésil en est une source exceptionnelle." },
+            { title: "Vitamine E : protecteur cellulaire", text: "Antioxydant liposoluble qui protège les membranes cellulaires des dommages. Sources : huiles végétales, amandes, graines de tournesol." },
+            { title: "Les vitamines liposolubles vs hydrosolubles", text: "Les vitamines A, D, E, K sont liposolubles (stockées dans les graisses). Les B et C sont hydrosolubles (l'excès est éliminé dans l'urine)." },
+            { title: "L'équilibre avant tout", text: "Une alimentation variée et équilibrée est la meilleure façon d'obtenir tous les nutriments nécessaires. Un excès de certaines vitamines peut être toxique." }
+        ]
+    }
 ];
 
 const Loader: React.FC<LoaderProps> = ({ text, isComplete, onContinue }) => {
