@@ -14,15 +14,24 @@ interface ReportScreenProps {
   onGoToScenarioSimulator: () => void;
   onStartTracking: () => void;
   onGoToPillbox: () => void;
+  onAddPrescriptionToPillbox: (medicationNames: string[]) => Promise<void>;
   isDirectFlow?: boolean;
 }
 
-const ReportScreen: React.FC<ReportScreenProps> = ({ report, patientContext, onReset, onStartSupportChat, onGoToSummary, onGoToAppointmentPrep, onGoToScenarioSimulator, onStartTracking, onGoToPillbox, isDirectFlow = false }) => {
+const ReportScreen: React.FC<ReportScreenProps> = (props) => {
+  const { 
+    report, patientContext, onReset, onStartSupportChat, onGoToSummary, onGoToAppointmentPrep, 
+    onGoToScenarioSimulator, onStartTracking, onGoToPillbox, onAddPrescriptionToPillbox, isDirectFlow = false 
+  } = props;
+
   const [copyButtonText, setCopyButtonText] = useState('Copier le résumé');
   const [locationInput, setLocationInput] = useState('');
   const [showExcuseModal, setShowExcuseModal] = useState(false);
   const [excuseName, setExcuseName] = useState('');
   const [excuseCopyText, setExcuseCopyText] = useState('Copier le texte');
+  const [prescriptionSelection, setPrescriptionSelection] = useState<string[]>(report.prescription);
+  const [addPillboxStatus, setAddPillboxStatus] = useState<'idle' | 'added'>('idle');
+  const [isAddingToPillbox, setIsAddingToPillbox] = useState(false);
 
 
   const handleCopySummary = () => {
@@ -42,8 +51,18 @@ const ReportScreen: React.FC<ReportScreenProps> = ({ report, patientContext, onR
     setTimeout(() => setExcuseCopyText('Copier le texte'), 2000);
   };
 
-  const handleStartTrackingClick = () => {
-    onStartTracking();
+  const handleTogglePrescription = (item: string) => {
+    setPrescriptionSelection(prev => 
+        prev.includes(item) ? prev.filter(p => p !== item) : [...prev, item]
+    );
+  };
+
+  const handleAddSelectionToPillbox = async () => {
+    setIsAddingToPillbox(true);
+    await onAddPrescriptionToPillbox(prescriptionSelection);
+    setIsAddingToPillbox(false);
+    setAddPillboxStatus('added');
+    setTimeout(() => setAddPillboxStatus('idle'), 2500);
   };
 
 
@@ -138,12 +157,44 @@ const ReportScreen: React.FC<ReportScreenProps> = ({ report, patientContext, onR
         </Section>
         
         {/* Prescription */}
-        <Section title="Ordonnance Suggérée (Sans Ordonnance)" icon={<PillIcon className="h-7 w-7 text-sky-400" />}>
-            <p className="text-slate-400 text-sm mb-3">Produits disponibles sans ordonnance qui pourraient aider. Consultez un pharmacien ou un médecin avant utilisation.</p>
-          <ul className="list-disc list-inside space-y-1">
-            {report.prescription.map((item, i) => <li key={i}>{item}</li>)}
-          </ul>
-        </Section>
+        {report.prescription.length > 0 && (
+          <>
+            <Section title="Ordonnance Suggérée (Sans Ordonnance)" icon={<PillIcon className="h-7 w-7 text-sky-400" />}>
+                <p className="text-slate-400 text-sm mb-3">Produits disponibles sans ordonnance qui pourraient aider. Consultez un pharmacien ou un médecin avant utilisation.</p>
+              <ul className="list-disc list-inside space-y-1">
+                {report.prescription.map((item, i) => <li key={i}>{item}</li>)}
+              </ul>
+            </Section>
+
+            <Section title="Ajouter au Pilulier Intelligent" icon={<PillIcon className="h-7 w-7 text-amber-400" />}>
+                <p className="text-slate-400 text-sm mb-3">Cochez les traitements que vous souhaitez ajouter à votre pilulier pour un suivi et des rappels.</p>
+                <div className="space-y-2">
+                    {report.prescription.map((item, i) => (
+                        <label key={i} htmlFor={`med-${i}`} className="flex items-center gap-3 bg-slate-900/50 p-3 rounded-md cursor-pointer hover:bg-slate-700/50 transition-colors">
+                            <input 
+                                type="checkbox" 
+                                id={`med-${i}`} 
+                                checked={prescriptionSelection.includes(item)}
+                                onChange={() => handleTogglePrescription(item)}
+                                className="h-5 w-5 rounded border-slate-500 bg-slate-700 text-sky-600 focus:ring-sky-500 flex-shrink-0"
+                            />
+                            <span className="text-slate-200">{item}</span>
+                        </label>
+                    ))}
+                </div>
+                <div className="mt-4">
+                    <button 
+                        onClick={handleAddSelectionToPillbox} 
+                        disabled={prescriptionSelection.length === 0 || addPillboxStatus === 'added' || isAddingToPillbox}
+                        className="w-full sm:w-auto bg-amber-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-amber-500 transition-colors disabled:bg-slate-700 disabled:text-slate-400"
+                    >
+                        {isAddingToPillbox ? 'Ajout en cours...' : (addPillboxStatus === 'added' ? 'Ajouté !' : `Ajouter la sélection (${prescriptionSelection.length})`)}
+                    </button>
+                </div>
+            </Section>
+          </>
+        )}
+
 
         {/* Social Eviction Period */}
         {report.socialEvictionPeriod && (
@@ -198,7 +249,7 @@ const ReportScreen: React.FC<ReportScreenProps> = ({ report, patientContext, onR
             </button>
              {!isDirectFlow && (
               <>
-                <button onClick={handleStartTrackingClick} className="bg-purple-600/80 text-white font-bold py-4 px-6 rounded-lg hover:bg-purple-500/80 transition duration-200 flex items-center justify-center gap-3 text-base sm:text-lg border border-purple-500">
+                <button onClick={onStartTracking} className="bg-purple-600/80 text-white font-bold py-4 px-6 rounded-lg hover:bg-purple-500/80 transition duration-200 flex items-center justify-center gap-3 text-base sm:text-lg border border-purple-500">
                     <ChartBarIcon className="h-7 w-7" />
                     Suivre mes Symptômes
                 </button>

@@ -1,16 +1,18 @@
 
+
 import React from 'react';
 import type { Medication } from '../../types';
-import { PillIcon, CalendarDaysIcon, ClockIcon, SparklesIcon, InformationCircleIcon } from '../icons';
+import { PillIcon, CalendarDaysIcon, ClockIcon, SparklesIcon, InformationCircleIcon, TrashIcon } from '../icons';
 
 interface PillboxScreenProps {
   pillboxData: Medication[];
   onNavigateToAdd: () => void;
   onNavigateToDetail: (medicationId: string) => void;
-  onBackToLanding: () => void;
+  onBack: () => void;
+  onDeleteMedication: (medicationId: string) => void;
 }
 
-const PillboxScreen: React.FC<PillboxScreenProps> = ({ pillboxData, onNavigateToAdd, onNavigateToDetail, onBackToLanding }) => {
+const PillboxScreen: React.FC<PillboxScreenProps> = ({ pillboxData, onNavigateToAdd, onNavigateToDetail, onBack, onDeleteMedication }) => {
 
   const getRemainingDays = (med: Medication): string => {
     if (med.durationDays === null) return 'Traitement au long cours';
@@ -40,7 +42,7 @@ const PillboxScreen: React.FC<PillboxScreenProps> = ({ pillboxData, onNavigateTo
           </div>
         </div>
         <div className="flex gap-2">
-            <button onClick={onBackToLanding} className="bg-slate-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-slate-500 transition-colors">Accueil</button>
+            <button onClick={onBack} className="bg-slate-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-slate-500 transition-colors">Retour</button>
             <button onClick={onNavigateToAdd} className="bg-sky-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-sky-500 transition-colors">
                 + Ajouter un traitement
             </button>
@@ -64,13 +66,24 @@ const PillboxScreen: React.FC<PillboxScreenProps> = ({ pillboxData, onNavigateTo
                         <span className="flex items-center gap-1.5"><CalendarDaysIcon className="h-4 w-4" /> {getRemainingDays(med)}</span>
                     </div>
                 </div>
-                <div className="flex-shrink-0 w-full sm:w-auto">
+                <div className="flex-shrink-0 w-full sm:w-auto flex items-center gap-2">
                     <button 
                         onClick={() => onNavigateToDetail(med.id)}
-                        className="w-full bg-slate-700 hover:bg-slate-600 text-white font-semibold py-2 px-4 rounded-lg transition-colors flex items-center justify-center gap-2"
+                        className="flex-grow w-full bg-slate-700 hover:bg-slate-600 text-white font-semibold py-2 px-4 rounded-lg transition-colors flex items-center justify-center gap-2"
                     >
                         <SparklesIcon className="h-5 w-5 text-amber-400" />
-                        Détails & Effets Secondaires
+                        Détails
+                    </button>
+                    <button
+                        onClick={() => {
+                            if (window.confirm(`Êtes-vous sûr de vouloir supprimer "${med.name}" de votre pilulier ?`)) {
+                                onDeleteMedication(med.id);
+                            }
+                        }}
+                        className="p-2 bg-red-600/20 text-red-400 rounded-lg hover:bg-red-600/40 transition-colors"
+                        aria-label={`Supprimer ${med.name}`}
+                    >
+                        <TrashIcon className="h-6 w-6" />
                     </button>
                 </div>
             </div>

@@ -1,8 +1,5 @@
 
 
-
-
-
 import React, { useState, useCallback, useEffect } from 'react';
 import { AppState } from './types';
 import type { Question, Answer, ReportData, PatientContext, SymptomIntensity, PreQuestionnaireAnswer, SymptomCharacteristics, ChatMessage, AppointmentPrepData, EmpathyLevel, ScenarioData, PreventionProfile, PreventionPlanData, NeuroTest, StabilityTestResult, CapillaryRefillTimeResult, SpeechDyspneaResult, TrackedSymptom, SymptomLogEntry, UserSettings, UserProfileData, Medication, RiskAnalysis, TrendAnalysis, TrainingProgress } from './types';
@@ -131,6 +128,9 @@ const App: React.FC = () => {
   // Loading state management
   const [isLoadComplete, setIsLoadComplete] = useState(false);
   const [onLoadContinue, setOnLoadContinue] = useState<(() => void) | null>(null);
+
+  // Navigation context
+  const [navigationSource, setNavigationSource] = useState<'landing' | 'report' | null>(null);
 
   // Load persistent data from localStorage on initial mount
   useEffect(() => {
@@ -305,6 +305,7 @@ const App: React.FC = () => {
     setActiveMedicationId(null);
     setIsLoadComplete(false);
     setOnLoadContinue(null);
+    setNavigationSource(null);
   }, []);
 
   const handleError = useCallback((errorMessage: string) => {
@@ -398,25 +399,37 @@ const App: React.FC = () => {
 
   const handleContextSubmit = useCallback(async (context: PatientContext) => {
     setPatientContext(context);
-
-    // This is a quick operation, so no need for the full loader treatment
-    const relevant = await shouldTriggerMemoryTest(initialSymptoms, context);
-    setIsMemoryTestRelevant(relevant);
+    setIsLoadComplete(false);
+    setOnLoadContinue(null);
+    setAppState(AppState.PROCESSING_CONTEXT);
 
     try {
-      const symptoms = await extractSymptoms(initialSymptoms);
-      if (symptoms && symptoms.length > 0) {
-        setExtractedSymptoms(symptoms);
-        setAppState(AppState.SYMPTOM_INTENSITY);
-      } else {
-        setSymptomIntensities([]);
-        setOverallDiscomfort(null);
-        setMainSymptom(null);
-        setSymptomCharacteristics(null);
-        setAppState(AppState.PRE_QUESTIONNAIRE);
-      }
+        const [relevant, symptoms] = await Promise.all([
+            shouldTriggerMemoryTest(initialSymptoms, context),
+            extractSymptoms(initialSymptoms)
+        ]);
+        
+        setIsMemoryTestRelevant(relevant);
+
+        setIsLoadComplete(true);
+        if (symptoms && symptoms.length > 0) {
+            setExtractedSymptoms(symptoms);
+            setOnLoadContinue(() => () => {
+                setAppState(AppState.SYMPTOM_INTENSITY);
+                setOnLoadContinue(null);
+            });
+        } else {
+            setSymptomIntensities([]);
+            setOverallDiscomfort(null);
+            setMainSymptom(null);
+            setSymptomCharacteristics(null);
+            setOnLoadContinue(() => () => {
+                setAppState(AppState.PRE_QUESTIONNAIRE);
+                setOnLoadContinue(null);
+            });
+        }
     } catch (err) {
-      handleError(err instanceof Error ? err.message : "Erreur lors de l'extraction des symptômes.");
+      handleError(err instanceof Error ? err.message : "Erreur lors de l'analyse du contexte.");
     }
   }, [initialSymptoms, handleError]);
   
@@ -448,17 +461,11 @@ const App: React.FC = () => {
     setPreQuestionnaireAnswers(preAnswers);
 
     if (isMemoryTestRelevant) {
-        setIsLoadComplete(false);
-        setOnLoadContinue(null);
         setAppState(AppState.GENERATING_MEMORY_TEST_WORDS);
         try {
             const words = await generateMemoryTestWords();
             setMemoryTestWords(words);
-            setIsLoadComplete(true);
-            setOnLoadContinue(() => () => {
-                setAppState(AppState.ANNOUNCE_MEMORY_TEST);
-                setOnLoadContinue(null);
-            });
+            setAppState(AppState.ANNOUNCE_MEMORY_TEST);
         } catch (err) {
             console.error("Failed to generate memory test words, skipping test.", err);
             await generateAndSetQuestions(patientContext, symptomIntensities, overallDiscomfort, mainSymptom, symptomCharacteristics, preAnswers);
@@ -475,46 +482,6 @@ const App: React.FC = () => {
     }
     generateAndSetQuestions(patientContext, symptomIntensities, overallDiscomfort, mainSymptom, symptomCharacteristics, preQuestionnaireAnswers);
   }, [patientContext, symptomIntensities, overallDiscomfort, mainSymptom, symptomCharacteristics, preQuestionnaireAnswers, generateAndSetQuestions, handleError]);
-
-  const proceedToExclusionFilter = useCallback(async (currentAnswers: Answer[]) => {
-    setIsLoadComplete(false);
-    setOnLoadContinue(null);
-    setAppState(AppState.GENERATING_EXCLUSION_SYMPTOMS);
-    if (!patientContext) {
-        handleError("Les informations contextuelles du patient sont manquantes.");
-        return;
-    }
-    try {
-        const symptoms = await generateExclusionSymptoms(initialSymptoms, patientContext, symptomIntensities, overallDiscomfort, mainSymptom, symptomCharacteristics, preQuestionnaireAnswers, currentAnswers);
-        if (symptoms && symptoms.length > 0) {
-            setPotentialExclusionSymptoms(symptoms);
-            setIsLoadComplete(true);
-            setOnLoadContinue(() => () => {
-                setAppState(AppState.EXCLUSION_FILTER);
-                setOnLoadContinue(null);
-            });
-        } else {
-            setExcludedSymptoms([]);
-            await handleExclusionFilterComplete([]);
-        }
-    } catch (err) {
-        handleError(err instanceof Error ? err.message : "Erreur lors de la génération des symptômes d'exclusion.");
-    }
-  }, [initialSymptoms, patientContext, symptomIntensities, overallDiscomfort, mainSymptom, symptomCharacteristics, preQuestionnaireAnswers, handleError]);
-  
-  const handleQuestionnaireComplete = useCallback(async (completedAnswers: Answer[]) => {
-    setAnswers(completedAnswers);
-    if (isMemoryTestRelevant) {
-        setAppState(AppState.MEMORY_TEST_INPUT);
-    } else {
-        await proceedToExclusionFilter(completedAnswers);
-    }
-  }, [isMemoryTestRelevant, proceedToExclusionFilter]);
-
-  const handleMemoryTestInputComplete = useCallback(async (userInput: string[]) => {
-    setMemoryTestResponse(userInput);
-    await proceedToExclusionFilter(answers);
-  }, [answers, proceedToExclusionFilter]);
 
   const generateAndSetPhotoPrompt = useCallback(async (currentExcludedSymptoms: string[], currentSelfExamResult: string | null, currentNeuroTestAnswers: NeuroTest[], currentCrtResult: CapillaryRefillTimeResult | null, currentRespiratoryRate: number | null, currentStabilityResult: StabilityTestResult | null, currentSpeechDyspneaResult: SpeechDyspneaResult | null) => {
       setIsLoadComplete(false);
@@ -533,14 +500,12 @@ const App: React.FC = () => {
           );
           setPhotoPrompt(prompt || null);
           setIsLoadComplete(true);
-          setOnLoadContinue(() => () => {
-              setAppState(AppState.PHOTO_UPLOAD);
-              setOnLoadContinue(null);
-          });
+          setOnLoadContinue(() => () => setAppState(AppState.PHOTO_UPLOAD));
       } catch (err) {
           console.error("Failed to generate photo prompt, continuing...", err);
           setPhotoPrompt(null);
-          setAppState(AppState.PHOTO_UPLOAD); // Go to photo upload even on failure
+          setIsLoadComplete(true);
+          setOnLoadContinue(() => () => setAppState(AppState.PHOTO_UPLOAD));
       }
   }, [initialSymptoms, patientContext, answers, symptomIntensities, overallDiscomfort, mainSymptom, symptomCharacteristics, preQuestionnaireAnswers, handleError]);
 
@@ -553,29 +518,14 @@ const App: React.FC = () => {
     setIsLoadComplete(false);
     setOnLoadContinue(null);
     setAppState(AppState.GENERATING_SPEECH_DYSPNEA_PROMPT);
-    if (!patientContext) {
-        handleError("Les informations contextuelles du patient sont manquantes.");
-        return;
-    }
+    if (!patientContext) { handleError("Contexte patient manquant."); return; }
     try {
-        const shouldRequest = await shouldRequestSpeechDyspneaTest(
-            initialSymptoms, patientContext, answers, symptomIntensities, overallDiscomfort, mainSymptom,
-            symptomCharacteristics, preQuestionnaireAnswers, excludedSymptoms, selfExamResult,
-            neuroTestAnswers, crtResult, respiratoryRate, currentStabilityResult
-        );
-
-        setIsLoadComplete(true);
+        const shouldRequest = await shouldRequestSpeechDyspneaTest(initialSymptoms, patientContext, answers, symptomIntensities, overallDiscomfort, mainSymptom,symptomCharacteristics, preQuestionnaireAnswers, excludedSymptoms, selfExamResult, neuroTestAnswers, crtResult, respiratoryRate, currentStabilityResult);
         if (shouldRequest) {
-             setOnLoadContinue(() => () => {
-                setAppState(AppState.SPEECH_DYSPNEA_TEST);
-                setOnLoadContinue(null);
-            });
+            setIsLoadComplete(true);
+            setOnLoadContinue(() => () => setAppState(AppState.SPEECH_DYSPNEA_TEST));
         } else {
-            setSpeechDyspneaResult(null);
-             setOnLoadContinue(() => () => {
-                handleSpeechDyspneaTestComplete(null);
-                setOnLoadContinue(null);
-            });
+            await handleSpeechDyspneaTestComplete(null);
         }
     } catch (err) {
         console.error("Failed to check for speech dyspnea test, skipping.", err);
@@ -592,36 +542,20 @@ const App: React.FC = () => {
     setIsLoadComplete(false);
     setOnLoadContinue(null);
     setAppState(AppState.GENERATING_STABILITY_TEST_PROMPT);
-    if (!patientContext) {
-        handleError("Les informations contextuelles du patient sont manquantes.");
-        return;
-    }
+    if (!patientContext) { handleError("Contexte patient manquant."); return; }
     try {
-        const shouldRequest = await shouldRequestStabilityTest(
-            initialSymptoms, patientContext, answers, symptomIntensities, overallDiscomfort, mainSymptom,
-            symptomCharacteristics, preQuestionnaireAnswers, excludedSymptoms, selfExamResult,
-            neuroTestAnswers, crtResult, currentRespiratoryRate
-        );
-
-        setIsLoadComplete(true);
+        const shouldRequest = await shouldRequestStabilityTest(initialSymptoms, patientContext, answers, symptomIntensities, overallDiscomfort, mainSymptom, symptomCharacteristics, preQuestionnaireAnswers, excludedSymptoms, selfExamResult, neuroTestAnswers, crtResult, currentRespiratoryRate);
         if (shouldRequest) {
-            setOnLoadContinue(() => () => {
-                setAppState(AppState.STABILITY_TEST);
-                setOnLoadContinue(null);
-            });
+            setIsLoadComplete(true);
+            setOnLoadContinue(() => () => setAppState(AppState.STABILITY_TEST));
         } else {
-            setStabilityTestResult(null);
-            setOnLoadContinue(() => () => {
-                handleStabilityTestComplete(null);
-                setOnLoadContinue(null);
-            });
+            await handleStabilityTestComplete(null);
         }
     } catch (err) {
         console.error("Failed to check for stability test, skipping.", err);
         await handleStabilityTestComplete(null);
     }
   }, [initialSymptoms, patientContext, answers, symptomIntensities, overallDiscomfort, mainSymptom, symptomCharacteristics, preQuestionnaireAnswers, excludedSymptoms, selfExamResult, neuroTestAnswers, crtResult, handleError, handleStabilityTestComplete]);
-
 
   const handleRespiratoryRateTestComplete = useCallback(async (count: number | null) => {
     const rate = count !== null ? count * 2 : null;
@@ -633,35 +567,20 @@ const App: React.FC = () => {
     setIsLoadComplete(false);
     setOnLoadContinue(null);
     setAppState(AppState.GENERATING_RESPIRATORY_RATE_PROMPT);
-    if (!patientContext) {
-        handleError("Les informations contextuelles du patient sont manquantes.");
-        return;
-    }
+    if (!patientContext) { handleError("Contexte patient manquant."); return; }
     try {
-        const shouldRequest = await shouldRequestRespiratoryRate(
-            initialSymptoms, patientContext, answers, symptomIntensities, overallDiscomfort, mainSymptom,
-            symptomCharacteristics, preQuestionnaireAnswers, excludedSymptoms, selfExamResult,
-            currentNeuroTestAnswers, currentCrtResult
-        );
-
-        setIsLoadComplete(true);
+        const shouldRequest = await shouldRequestRespiratoryRate(initialSymptoms, patientContext, answers, symptomIntensities, overallDiscomfort, mainSymptom, symptomCharacteristics, preQuestionnaireAnswers, excludedSymptoms, selfExamResult, currentNeuroTestAnswers, currentCrtResult);
         if (shouldRequest) {
-            setOnLoadContinue(() => () => {
-                setAppState(AppState.RESPIRATORY_RATE_TEST);
-                setOnLoadContinue(null);
-            });
+             setIsLoadComplete(true);
+            setOnLoadContinue(() => () => setAppState(AppState.RESPIRATORY_RATE_TEST));
         } else {
-            setRespiratoryRate(null);
-            setOnLoadContinue(() => () => {
-                checkAndStartStabilityTest(null);
-                setOnLoadContinue(null);
-            });
+            await handleRespiratoryRateTestComplete(null);
         }
     } catch (err) {
         console.error("Failed to check for respiratory rate, skipping.", err);
-        await checkAndStartStabilityTest(null);
+        await handleRespiratoryRateTestComplete(null);
     }
-  }, [initialSymptoms, patientContext, answers, symptomIntensities, overallDiscomfort, mainSymptom, symptomCharacteristics, preQuestionnaireAnswers, excludedSymptoms, selfExamResult, handleError, checkAndStartStabilityTest]);
+  }, [initialSymptoms, patientContext, answers, symptomIntensities, overallDiscomfort, mainSymptom, symptomCharacteristics, preQuestionnaireAnswers, excludedSymptoms, selfExamResult, handleError, handleRespiratoryRateTestComplete]);
   
   const handleCRTTestComplete = useCallback(async (result: CapillaryRefillTimeResult | null) => {
       setCrtResult(result);
@@ -672,35 +591,20 @@ const App: React.FC = () => {
       setIsLoadComplete(false);
       setOnLoadContinue(null);
       setAppState(AppState.GENERATING_CRT_PROMPT);
-      if (!patientContext) {
-          handleError("Les informations contextuelles du patient sont manquantes.");
-          return;
-      }
+      if (!patientContext) { handleError("Contexte patient manquant."); return; }
       try {
-          const shouldRequest = await shouldRequestCRT(
-              initialSymptoms, patientContext, answers, symptomIntensities, overallDiscomfort, mainSymptom,
-              symptomCharacteristics, preQuestionnaireAnswers, excludedSymptoms, selfExamResult,
-              currentNeuroTestAnswers
-          );
-          
-          setIsLoadComplete(true);
+          const shouldRequest = await shouldRequestCRT(initialSymptoms, patientContext, answers, symptomIntensities, overallDiscomfort, mainSymptom,symptomCharacteristics, preQuestionnaireAnswers, excludedSymptoms, selfExamResult, currentNeuroTestAnswers);
           if (shouldRequest) {
-              setOnLoadContinue(() => () => {
-                  setAppState(AppState.CRT_TEST);
-                  setOnLoadContinue(null);
-              });
+              setIsLoadComplete(true);
+              setOnLoadContinue(() => () => setAppState(AppState.CRT_TEST));
           } else {
-              setCrtResult(null);
-              setOnLoadContinue(() => () => {
-                checkAndStartRespiratoryTest(currentNeuroTestAnswers, null);
-                setOnLoadContinue(null);
-              });
+              await handleCRTTestComplete(null);
           }
       } catch (err) {
           console.error("Failed to check for CRT test, skipping.", err);
-          await checkAndStartRespiratoryTest(currentNeuroTestAnswers, null);
+          await handleCRTTestComplete(null);
       }
-  }, [initialSymptoms, patientContext, answers, symptomIntensities, overallDiscomfort, mainSymptom, symptomCharacteristics, preQuestionnaireAnswers, excludedSymptoms, selfExamResult, handleError, checkAndStartRespiratoryTest]);
+  }, [initialSymptoms, patientContext, answers, symptomIntensities, overallDiscomfort, mainSymptom, symptomCharacteristics, preQuestionnaireAnswers, excludedSymptoms, selfExamResult, handleError, handleCRTTestComplete]);
 
   const handleNeuroTestComplete = useCallback(async (completedNeuroAnswers: NeuroTest[]) => {
       setNeuroTestAnswers(completedNeuroAnswers);
@@ -711,45 +615,22 @@ const App: React.FC = () => {
       setIsLoadComplete(false);
       setOnLoadContinue(null);
       setAppState(AppState.GENERATING_NEURO_TESTS);
-      if (!patientContext) {
-          handleError("Les informations contextuelles du patient sont manquantes.");
-          return;
-      }
-
+      if (!patientContext) { handleError("Contexte patient manquant."); return; }
       try {
-          const questions = await generateNeuroTests(
-              initialSymptoms,
-              patientContext,
-              answers,
-              symptomIntensities,
-              overallDiscomfort,
-              mainSymptom,
-              symptomCharacteristics,
-              preQuestionnaireAnswers,
-              excludedSymptoms,
-              currentSelfExamResult
-          );
-          setIsLoadComplete(true);
+          const questions = await generateNeuroTests(initialSymptoms, patientContext, answers, symptomIntensities, overallDiscomfort, mainSymptom, symptomCharacteristics, preQuestionnaireAnswers, excludedSymptoms, currentSelfExamResult);
           if (questions && questions.length > 0) {
               setNeuroTestQuestions(questions);
-              setOnLoadContinue(() => () => {
-                  setAppState(AppState.NEURO_TESTS);
-                  setOnLoadContinue(null);
-              });
+              setIsLoadComplete(true);
+              setOnLoadContinue(() => () => setAppState(AppState.NEURO_TESTS));
           } else {
               setNeuroTestQuestions([]);
-              setNeuroTestAnswers([]);
-              setOnLoadContinue(() => () => {
-                checkAndStartCRTTest([]);
-                setOnLoadContinue(null);
-              });
+              await handleNeuroTestComplete([]);
           }
       } catch (err) {
           console.error("Failed to generate neuro tests, skipping.", err);
-          await checkAndStartCRTTest([]);
+          await handleNeuroTestComplete([]);
       }
-  }, [initialSymptoms, patientContext, answers, symptomIntensities, overallDiscomfort, mainSymptom, symptomCharacteristics, preQuestionnaireAnswers, excludedSymptoms, handleError, checkAndStartCRTTest]);
-
+  }, [initialSymptoms, patientContext, answers, symptomIntensities, overallDiscomfort, mainSymptom, symptomCharacteristics, preQuestionnaireAnswers, excludedSymptoms, handleError, handleNeuroTestComplete]);
 
   const handleSelfExamComplete = useCallback(async (result: string) => {
       setSelfExamResult(result);
@@ -761,44 +642,58 @@ const App: React.FC = () => {
       setIsLoadComplete(false);
       setOnLoadContinue(null);
       setAppState(AppState.GENERATING_SELF_EXAM_PROMPT);
-
-      if (!patientContext) {
-          handleError("Les informations contextuelles du patient sont manquantes.");
-          return;
-      }
-
+      if (!patientContext) { handleError("Contexte patient manquant."); return; }
       try {
-          const prompt = await generateSelfExamPrompt(
-              initialSymptoms,
-              patientContext,
-              answers,
-              symptomIntensities,
-              overallDiscomfort,
-              mainSymptom,
-              symptomCharacteristics,
-              preQuestionnaireAnswers,
-              selectedSymptoms
-          );
-          setIsLoadComplete(true);
+          const prompt = await generateSelfExamPrompt(initialSymptoms, patientContext, answers, symptomIntensities, overallDiscomfort, mainSymptom, symptomCharacteristics, preQuestionnaireAnswers, selectedSymptoms);
           if (prompt) {
               setSelfExamPrompt(prompt);
-              setOnLoadContinue(() => () => {
-                  setAppState(AppState.SELF_EXAM);
-                  setOnLoadContinue(null);
-              });
+              setIsLoadComplete(true);
+              setOnLoadContinue(() => () => setAppState(AppState.SELF_EXAM));
           } else {
               setSelfExamPrompt(null);
-              setSelfExamResult(null);
-              setOnLoadContinue(() => () => {
-                generateAndSetNeuroTest(null);
-                setOnLoadContinue(null);
-              });
+              await handleSelfExamComplete('');
           }
       } catch (err) {
           console.error("Failed to generate self-exam prompt, skipping.", err);
-          await generateAndSetNeuroTest(null);
+          await handleSelfExamComplete('');
       }
-  }, [initialSymptoms, patientContext, answers, symptomIntensities, overallDiscomfort, mainSymptom, symptomCharacteristics, preQuestionnaireAnswers, handleError, generateAndSetNeuroTest]);
+  }, [initialSymptoms, patientContext, answers, symptomIntensities, overallDiscomfort, mainSymptom, symptomCharacteristics, preQuestionnaireAnswers, handleError, handleSelfExamComplete]);
+  
+  const proceedToExclusionFilter = useCallback(async (currentAnswers: Answer[]) => {
+    setIsLoadComplete(false);
+    setOnLoadContinue(null);
+    setAppState(AppState.GENERATING_EXCLUSION_SYMPTOMS);
+    if (!patientContext) { handleError("Les informations contextuelles du patient sont manquantes."); return; }
+    try {
+        const symptoms = await generateExclusionSymptoms(initialSymptoms, patientContext, symptomIntensities, overallDiscomfort, mainSymptom, symptomCharacteristics, preQuestionnaireAnswers, currentAnswers);
+        if (symptoms && symptoms.length > 0) {
+            setPotentialExclusionSymptoms(symptoms);
+            setIsLoadComplete(true);
+            setOnLoadContinue(() => () => {
+                setAppState(AppState.EXCLUSION_FILTER);
+                setOnLoadContinue(null);
+            });
+        } else {
+            await handleExclusionFilterComplete([]);
+        }
+    } catch (err) {
+        handleError(err instanceof Error ? err.message : "Erreur lors de la génération des symptômes d'exclusion.");
+    }
+  }, [initialSymptoms, patientContext, symptomIntensities, overallDiscomfort, mainSymptom, symptomCharacteristics, preQuestionnaireAnswers, handleError, handleExclusionFilterComplete]);
+  
+  const handleQuestionnaireComplete = useCallback(async (completedAnswers: Answer[]) => {
+    setAnswers(completedAnswers);
+    if (isMemoryTestRelevant) {
+        setAppState(AppState.MEMORY_TEST_INPUT);
+    } else {
+        await proceedToExclusionFilter(completedAnswers);
+    }
+  }, [isMemoryTestRelevant, proceedToExclusionFilter]);
+
+  const handleMemoryTestInputComplete = useCallback(async (userInput: string[]) => {
+    setMemoryTestResponse(userInput);
+    await proceedToExclusionFilter(answers);
+  }, [answers, proceedToExclusionFilter]);
   
   const handlePhotoSubmit = useCallback(async (imageBase64: string | null) => {
     setPhotoBase64(imageBase64);
@@ -888,7 +783,257 @@ const App: React.FC = () => {
       }
     };
     
-    // ... all other handlers up to the end of the file
+    const handleGoToAppointmentPrep = useCallback(async () => {
+        if (!report) return;
+        setNavigationSource('report');
+        setIsLoadComplete(false);
+        setOnLoadContinue(null);
+        setAppState(AppState.GENERATING_APPOINTMENT_PREP);
+        try {
+            const data = await generateAppointmentPrepData(report);
+            setAppointmentPrepData(data);
+            setIsLoadComplete(true);
+            setOnLoadContinue(() => () => {
+                setAppState(AppState.MEDICAL_APPOINTMENT_PREP);
+                setOnLoadContinue(null);
+            });
+        } catch (err) {
+            handleError(err instanceof Error ? err.message : "Erreur lors de la génération de la préparation de rendez-vous.");
+        }
+    }, [report, handleError]);
+
+    const handleGoToScenarioSimulator = useCallback(async () => {
+        if (!report) return;
+        setNavigationSource('report');
+        setIsLoadComplete(false);
+        setOnLoadContinue(null);
+        setAppState(AppState.GENERATING_SCENARIOS);
+        try {
+            const data = await generateScenarios(report);
+            setScenarioData(data);
+            setIsLoadComplete(true);
+            setOnLoadContinue(() => () => {
+                setAppState(AppState.SCENARIO_SIMULATOR);
+                setOnLoadContinue(null);
+            });
+        } catch (err) {
+            handleError(err instanceof Error ? err.message : "Erreur lors de la génération des scénarios.");
+        }
+    }, [report, handleError]);
+
+    const handleStartSupportChat = useCallback(() => {
+        if (!report) return;
+        setNavigationSource('report');
+        const ai = new GoogleGenAI({ apiKey: userSettings.apiKey || process.env.API_KEY! });
+        const systemInstruction = getSystemInstructionForEmpathy(empathyLevel, report);
+        const newChat = ai.chats.create({
+            model: 'gemini-2.5-flash',
+            config: { systemInstruction },
+        });
+        setChatSession(newChat);
+        setChatHistory([]); // Start with a clean history for each session
+        setAppState(AppState.PSYCHOLOGICAL_SUPPORT);
+    }, [report, empathyLevel, userSettings.apiKey]);
+
+    const handleSendMessage = useCallback(async (message: string) => {
+        if (!chatSession) return;
+
+        const updatedHistory: ChatMessage[] = [...chatHistory, { role: 'user', text: message }];
+        setChatHistory(updatedHistory);
+        setIsChatResponding(true);
+
+        try {
+            let responseText = '';
+            const responseStream = await chatSession.sendMessageStream({ message });
+            for await (const chunk of responseStream) {
+                responseText += chunk.text;
+                setChatHistory([...updatedHistory, { role: 'model', text: responseText }]);
+            }
+        } catch (err) {
+            console.error("Chat error:", err);
+            setChatHistory([...updatedHistory, { role: 'model', text: "Désolé, une erreur est survenue. Veuillez réessayer." }]);
+        } finally {
+            setIsChatResponding(false);
+        }
+    }, [chatSession, chatHistory]);
+
+    const handleStartTracking = useCallback(() => {
+        if (!report) return;
+        
+        let suggested = symptomIntensities.map(s => s.name);
+        if (mainSymptom && !suggested.includes(mainSymptom)) {
+            suggested.push(mainSymptom);
+        }
+        if (suggested.length === 0) {
+            suggested = [...extractedSymptoms];
+        }
+        
+        const uniqueSuggested = [...new Set(suggested)];
+
+        setSymptomsToTrackSetup(uniqueSuggested);
+        setNavigationSource('report');
+        setAppState(AppState.SYMPTOM_JOURNAL_SETUP);
+    }, [report, extractedSymptoms, symptomIntensities, mainSymptom]);
+
+    const handleSymptomJournalSetupSubmit = useCallback((symptomsToTrack: string[]) => {
+        const newJournalData: TrackedSymptom[] = symptomsToTrack.map(name => ({
+            name,
+            logs: [],
+        }));
+        setJournalData(newJournalData);
+        setAppState(AppState.SYMPTOM_JOURNAL);
+    }, []);
+
+    const handleAddJournalEntry = useCallback((symptomName: string, entry: Omit<SymptomLogEntry, 'date'>) => {
+        const today = new Date().toISOString().split('T')[0];
+        setJournalData(prevData => {
+            return prevData.map(symptom => {
+                if (symptom.name === symptomName) {
+                    const existingLogIndex = symptom.logs.findIndex(log => log.date === today);
+                    const newLog = { date: today, ...entry };
+                    let newLogs;
+                    if (existingLogIndex > -1) {
+                        newLogs = [...symptom.logs];
+                        newLogs[existingLogIndex] = newLog;
+                    } else {
+                        newLogs = [...symptom.logs, newLog];
+                    }
+                    return { ...symptom, logs: newLogs.sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime()) };
+                }
+                return symptom;
+            });
+        });
+    }, []);
+
+    const handleAnalyzeTrends = useCallback(async () => {
+        if (journalData.length === 0) return;
+        setIsLoadComplete(false);
+        setOnLoadContinue(null);
+        setAppState(AppState.ANALYZING_SYMPTOM_TRENDS);
+        try {
+            const analysis = await analyzeSymptomTrends(journalData);
+            setTrendAnalysis(analysis);
+            setIsLoadComplete(true);
+            setOnLoadContinue(() => () => {
+                setAppState(AppState.SYMPTOM_JOURNAL); 
+                setOnLoadContinue(null);
+            });
+        } catch (err) {
+            handleError(err instanceof Error ? err.message : "Erreur lors de l'analyse des tendances.");
+            setAppState(AppState.SYMPTOM_JOURNAL);
+        }
+    }, [journalData, handleError]);
+
+    const handleAddMedication = useCallback(async (medication: Medication) => {
+        setIsLoadComplete(false);
+        setOnLoadContinue(null);
+        setAppState(AppState.GENERATING_SIDE_EFFECTS);
+        try {
+            const sideEffectInfo = await generateMedicationSideEffects(medication.name);
+            const medicationWithInfo = { ...medication, sideEffectInfo, trackedSideEffects: [] };
+            setPillboxData(prev => [...prev, medicationWithInfo]);
+            
+            setIsLoadComplete(true);
+            setOnLoadContinue(() => () => {
+                setActiveMedicationId(medicationWithInfo.id);
+                setAppState(AppState.MEDICATION_DETAIL);
+                setOnLoadContinue(null);
+            });
+        } catch (err) {
+            handleError(err instanceof Error ? err.message : "Erreur lors de la recherche des effets secondaires.");
+            setPillboxData(prev => [...prev, medication]);
+            setAppState(AppState.PILLBOX);
+        }
+    }, [handleError]);
+
+    const handleAddPrescriptionToPillbox = useCallback(async (medicationNames: string[]) => {
+        const currentMedNames = new Set(pillboxData.map(m => m.name.toLowerCase()));
+        const filteredNewMedNames = medicationNames.filter(name => !currentMedNames.has(name.toLowerCase()));
+
+        if (filteredNewMedNames.length === 0) return;
+
+        const newMedicationsPromises = filteredNewMedNames.map(async (name) => {
+            const baseMedication: Medication = {
+                id: Date.now().toString() + name.replace(/\s/g, ''),
+                name: name,
+                frequency: 'Au besoin',
+                durationDays: null,
+                startDate: new Date().toISOString().split('T')[0],
+                trackedSideEffects: [],
+            };
+            try {
+                const sideEffectInfo = await generateMedicationSideEffects(name);
+                return { ...baseMedication, sideEffectInfo };
+            } catch (err) {
+                console.error(`Failed to fetch side effects for ${name}:`, err);
+                return baseMedication;
+            }
+        });
+
+        const newMedications = await Promise.all(newMedicationsPromises);
+        setPillboxData(prev => [...prev, ...newMedications]);
+    }, [pillboxData]);
+
+    const handleDeleteMedication = useCallback((medicationId: string) => {
+        setPillboxData(prev => prev.filter(m => m.id !== medicationId));
+    }, []);
+
+    const handleUpdateSideEffectNotes = useCallback((medicationId: string, notes: string) => {
+        const today = new Date().toISOString().split('T')[0];
+        setPillboxData(prevData => prevData.map(med => {
+            if (med.id === medicationId) {
+                const newLog = { date: today, notes };
+                const existingLogIndex = med.trackedSideEffects?.findIndex(log => log.date === today) ?? -1;
+                
+                let newLogs;
+                if (existingLogIndex > -1) {
+                    newLogs = [...(med.trackedSideEffects || [])];
+                    if (notes.trim() === '') { // If notes are cleared, remove the log for today
+                        newLogs.splice(existingLogIndex, 1);
+                    } else {
+                        newLogs[existingLogIndex] = newLog;
+                    }
+                } else if (notes.trim() !== '') {
+                    newLogs = [...(med.trackedSideEffects || []), newLog];
+                } else {
+                    newLogs = med.trackedSideEffects || [];
+                }
+                return { ...med, trackedSideEffects: newLogs.sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime()) };
+            }
+            return med;
+        }));
+    }, []);
+
+    const handlePreventionProfileSubmit = useCallback(async (profile: PreventionProfile) => {
+        setPreventionProfile(profile);
+        setIsLoadComplete(false);
+        setOnLoadContinue(null);
+        setAppState(AppState.GENERATING_PREVENTION_PLAN);
+        try {
+            const [planData, riskData] = await Promise.all([
+                generatePreventionPlan(profile),
+                generateRiskAnalysis(profile)
+            ]);
+            setPreventionPlan(planData);
+            setRiskAnalysis(riskData);
+            setIsLoadComplete(true);
+            setOnLoadContinue(() => () => {
+                setAppState(AppState.PREVENTION_PLAN_REPORT);
+                setOnLoadContinue(null);
+            });
+        } catch (err) {
+            handleError(err instanceof Error ? err.message : "Erreur lors de la génération du plan de prévention.");
+        }
+    }, [handleError]);
+
+    const handleBackFromTool = () => {
+        if (navigationSource === 'report') {
+            setAppState(AppState.REPORT);
+        } else {
+            handleReset();
+        }
+        setNavigationSource(null);
+    };
 
     const renderContent = (): React.ReactNode => {
     switch (appState) {
@@ -901,8 +1046,8 @@ const App: React.FC = () => {
           onShowHowItWorks={handleNavigateToHowItWorks}
           onShowSettings={handleNavigateToSettings}
           hasJournalData={journalData.length > 0}
-          onGoToJournal={() => setAppState(AppState.SYMPTOM_JOURNAL)}
-          onGoToPillbox={() => setAppState(AppState.PILLBOX)}
+          onGoToJournal={() => { setNavigationSource('landing'); setAppState(AppState.SYMPTOM_JOURNAL); }}
+          onGoToPillbox={() => { setNavigationSource('landing'); setAppState(AppState.PILLBOX); }}
           onStartTraining={handleNavigateToTraining}
         />;
       case AppState.HOW_IT_WORKS:
@@ -931,6 +1076,8 @@ const App: React.FC = () => {
         return <InitialScreen onStart={handleStartDiagnosis} />;
       case AppState.CONTEXT_GATHERING:
         return <ContextScreen onSubmit={handleContextSubmit} savedProfile={userProfile} />;
+      case AppState.PROCESSING_CONTEXT:
+        return <Loader text="Analyse du contexte..." isComplete={isLoadComplete} onContinue={onLoadContinue || undefined} />;
       case AppState.SYMPTOM_INTENSITY:
         return <SymptomIntensityScreen symptoms={extractedSymptoms} onSubmit={handleIntensitySubmit} onSkip={handleSkipIntensityScreen} />;
       case AppState.SYMPTOM_CHARACTERISTICS:
@@ -938,7 +1085,7 @@ const App: React.FC = () => {
       case AppState.PRE_QUESTIONNAIRE:
         return <PreQuestionnaireScreen onSubmit={handlePreQuestionnaireSubmit} />;
       case AppState.GENERATING_MEMORY_TEST_WORDS:
-        return <Loader text="Génération des mots pour le test de mémoire..." isComplete={isLoadComplete} onContinue={onLoadContinue || undefined} />;
+        return <Loader text="Génération des mots pour le test de mémoire..." isComplete={false} />;
       case AppState.ANNOUNCE_MEMORY_TEST:
         return <AnnounceMemoryTestScreen words={memoryTestWords} onContinue={handleMemoryTestAnnounced} />;
       case AppState.GENERATING_QUESTIONS:
@@ -990,12 +1137,13 @@ const App: React.FC = () => {
           report={report} 
           patientContext={patientContext}
           onReset={handleReset} 
-          onStartSupportChat={() => {}} /* Placeholder */
-          onGoToSummary={() => {}} /* Placeholder */
-          onGoToAppointmentPrep={() => {}} /* Placeholder */
-          onGoToScenarioSimulator={() => {}} /* Placeholder */
-          onStartTracking={() => {}} /* Placeholder */
-          onGoToPillbox={() => setAppState(AppState.PILLBOX)}
+          onStartSupportChat={handleStartSupportChat}
+          onGoToSummary={() => setAppState(AppState.DIAGNOSTIC_SUMMARY)}
+          onGoToAppointmentPrep={handleGoToAppointmentPrep}
+          onGoToScenarioSimulator={handleGoToScenarioSimulator}
+          onStartTracking={handleStartTracking}
+          onGoToPillbox={() => { setNavigationSource('report'); setAppState(AppState.PILLBOX); }}
+          onAddPrescriptionToPillbox={handleAddPrescriptionToPillbox}
           isDirectFlow={isDirectFlow}
           /> : null;
       case AppState.DIAGNOSTIC_SUMMARY:
@@ -1024,7 +1172,7 @@ const App: React.FC = () => {
       case AppState.PSYCHOLOGICAL_SUPPORT:
         return <ChatScreen
           history={chatHistory}
-          onSendMessage={() => {}} /* Placeholder */
+          onSendMessage={handleSendMessage}
           isResponding={isChatResponding}
           onBackToReport={() => setAppState(AppState.REPORT)}
           empathyLevel={empathyLevel}
@@ -1033,39 +1181,45 @@ const App: React.FC = () => {
       case AppState.GENERATING_APPOINTMENT_PREP:
         return <Loader text="Génération de l'aide à la préparation..." isComplete={isLoadComplete} onContinue={onLoadContinue || undefined} />;
       case AppState.MEDICAL_APPOINTMENT_PREP:
-        return appointmentPrepData ? <MedicalAppointmentPrepScreen prepData={appointmentPrepData} onBackToReport={() => setAppState(AppState.REPORT)} onGoToSummary={() => {}} /* Placeholder */ /> : null;
+        return appointmentPrepData ? <MedicalAppointmentPrepScreen prepData={appointmentPrepData} onBackToReport={() => setAppState(AppState.REPORT)} onGoToSummary={() => setAppState(AppState.DIAGNOSTIC_SUMMARY)} /> : null;
       case AppState.GENERATING_SCENARIOS:
         return <Loader text="Génération des scénarios d'évolution..." isComplete={isLoadComplete} onContinue={onLoadContinue || undefined} />;
       case AppState.SCENARIO_SIMULATOR:
         return scenarioData ? <ScenarioSimulatorScreen scenarios={scenarioData.scenarios} onBackToReport={() => setAppState(AppState.REPORT)} /> : null;
       case AppState.PREVENTION_PLAN_PROFILE:
-        return <PreventionProfileScreen onSubmit={() => {}} /* Placeholder */ onBackToLanding={handleReset} />;
+        return <PreventionProfileScreen onSubmit={handlePreventionProfileSubmit} onBackToLanding={handleReset} />;
       case AppState.GENERATING_PREVENTION_PLAN:
         return <Loader text="Génération de votre plan de prévention personnalisé..." isComplete={isLoadComplete} onContinue={onLoadContinue || undefined} />;
       case AppState.PREVENTION_PLAN_REPORT:
         return (preventionPlan && riskAnalysis) ? <PreventionPlanReportScreen plan={preventionPlan} riskAnalysis={riskAnalysis} onReset={handleReset} /> : null;
       case AppState.SYMPTOM_JOURNAL_SETUP:
-        return <SymptomJournalSetupScreen suggestedSymptoms={symptomsToTrackSetup} onSubmit={() => {}} /* Placeholder */ onBackToReport={() => setAppState(AppState.REPORT)} />;
+        return <SymptomJournalSetupScreen suggestedSymptoms={symptomsToTrackSetup} onSubmit={handleSymptomJournalSetupSubmit} onBackToReport={() => setAppState(AppState.REPORT)} />;
       case AppState.ANALYZING_SYMPTOM_TRENDS:
           return <Loader text="L'IA analyse les tendances de vos symptômes..." isComplete={isLoadComplete} onContinue={onLoadContinue || undefined} />;
       case AppState.SYMPTOM_JOURNAL:
           return <SymptomJournalScreen 
               journalData={journalData} 
-              onAddEntry={() => {}} /* Placeholder */
-              onBackToLanding={handleReset}
-              onAnalyzeTrends={() => {}} /* Placeholder */
+              onAddEntry={handleAddJournalEntry}
+              onBack={handleBackFromTool}
+              onAnalyzeTrends={handleAnalyzeTrends}
               trendAnalysis={trendAnalysis}
               onClearTrendAnalysis={() => setTrendAnalysis(null)}
           />;
       case AppState.PILLBOX:
-        return <PillboxScreen pillboxData={pillboxData} onNavigateToAdd={() => setAppState(AppState.PILLBOX_ADD_MEDICATION)} onNavigateToDetail={() => {}} /* Placeholder */ onBackToLanding={handleReset} />;
+        return <PillboxScreen 
+            pillboxData={pillboxData} 
+            onNavigateToAdd={() => setAppState(AppState.PILLBOX_ADD_MEDICATION)} 
+            onNavigateToDetail={(id) => { setActiveMedicationId(id); setAppState(AppState.MEDICATION_DETAIL); }} 
+            onBack={handleBackFromTool} 
+            onDeleteMedication={handleDeleteMedication}
+        />;
       case AppState.PILLBOX_ADD_MEDICATION:
-        return <AddMedicationScreen onAddMedication={() => {}} /* Placeholder */ onBack={() => setAppState(AppState.PILLBOX)} />;
+        return <AddMedicationScreen onAddMedication={handleAddMedication} onBack={() => setAppState(AppState.PILLBOX)} />;
       case AppState.GENERATING_SIDE_EFFECTS:
         return <Loader text="Recherche des effets secondaires..." isComplete={isLoadComplete} onContinue={onLoadContinue || undefined} />;
       case AppState.MEDICATION_DETAIL:
         const activeMed = pillboxData.find(m => m.id === activeMedicationId);
-        return activeMed ? <MedicationDetailScreen medication={activeMed} onUpdateSideEffectNotes={() => {}} /* Placeholder */ onBack={() => setAppState(AppState.PILLBOX)} /> : null;
+        return activeMed ? <MedicationDetailScreen medication={activeMed} onUpdateSideEffectNotes={handleUpdateSideEffectNotes} onBack={() => setAppState(AppState.PILLBOX)} /> : null;
       case AppState.TRAINING:
         return <TrainingScreen onBackToLanding={handleReset} onNavigateToTrainingProtect={handleNavigateToTrainingProtect} onNavigateToTrainingAlert={handleNavigateToTrainingAlert} trainingProgress={trainingProgress}/>;
       case AppState.TRAINING_PROTECT:
@@ -1083,8 +1237,8 @@ const App: React.FC = () => {
           onShowHowItWorks={handleNavigateToHowItWorks}
           onShowSettings={handleNavigateToSettings}
           hasJournalData={journalData.length > 0}
-          onGoToJournal={() => setAppState(AppState.SYMPTOM_JOURNAL)}
-          onGoToPillbox={() => setAppState(AppState.PILLBOX)}
+          onGoToJournal={() => { setNavigationSource('landing'); setAppState(AppState.SYMPTOM_JOURNAL); }}
+          onGoToPillbox={() => { setNavigationSource('landing'); setAppState(AppState.PILLBOX); }}
           onStartTraining={handleNavigateToTraining}
         />;
     }

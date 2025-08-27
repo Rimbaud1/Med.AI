@@ -7,7 +7,7 @@ import { BookOpenIcon, ChartBarIcon, SparklesIcon } from '../icons';
 interface SymptomJournalScreenProps {
   journalData: TrackedSymptom[];
   onAddEntry: (symptomName: string, entry: Omit<SymptomLogEntry, 'date'>) => void;
-  onBackToLanding: () => void;
+  onBack: () => void;
   onAnalyzeTrends: () => void;
   trendAnalysis: TrendAnalysis | null;
   onClearTrendAnalysis: () => void;
@@ -65,7 +65,7 @@ const SymptomChart: React.FC<{ logs: SymptomLogEntry[] }> = ({ logs }) => {
 };
 
 
-const SymptomJournalScreen: React.FC<SymptomJournalScreenProps> = ({ journalData, onAddEntry, onBackToLanding, onAnalyzeTrends, trendAnalysis, onClearTrendAnalysis }) => {
+const SymptomJournalScreen: React.FC<SymptomJournalScreenProps> = ({ journalData, onAddEntry, onBack, onAnalyzeTrends, trendAnalysis, onClearTrendAnalysis }) => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedSymptom, setSelectedSymptom] = useState('');
     const [intensity, setIntensity] = useState(5);
@@ -106,7 +106,7 @@ const SymptomJournalScreen: React.FC<SymptomJournalScreenProps> = ({ journalData
                     </div>
                 </div>
                 <div className="flex gap-2">
-                    <button onClick={onBackToLanding} className="bg-slate-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-slate-500 transition-colors">Accueil</button>
+                    <button onClick={onBack} className="bg-slate-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-slate-500 transition-colors">Retour</button>
                     <button onClick={() => openModal()} disabled={journalData.length === 0} className="bg-sky-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-sky-500 transition-colors disabled:bg-slate-700 disabled:cursor-not-allowed">
                         + Ajouter une entrée
                     </button>
