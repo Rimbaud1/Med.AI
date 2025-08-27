@@ -1,6 +1,9 @@
 
 
+
+
 import { GoogleGenAI, Type } from "@google/genai";
+// FIX: Import CrosswordData type
 import type { Question, ReportData, Answer, PatientContext, PossibleIssue, SymptomIntensity, PreQuestionnaireAnswer, SymptomCharacteristics, AppointmentPrepData, ScenarioData, PreventionProfile, PreventionPlanData, NeuroTest, StabilityTestResult, CapillaryRefillTimeResult, SpeechDyspneaResult, MedicationSideEffectInfo, RiskAnalysis, TrackedSymptom, TrendAnalysis, TrainingScenario, CrosswordData } from '../types';
 
 let _ai: GoogleGenAI | null = null;
@@ -1355,25 +1358,18 @@ export async function generateTrainingScenarios(topic: 'protect' | 'alert'): Pro
         throw new Error("Impossible de générer les scénarios d'entraînement.");
     }
 }
-
+// FIX: Add missing function to generate crossword puzzles
 export async function generateCrossword(theme: string): Promise<CrosswordData> {
     const ai = getClient();
     const model = 'gemini-2.5-flash';
-    const size = 10;
-    const systemInstruction = `You are an expert crossword puzzle creator. Generate a complete crossword puzzle based on the user's theme. The grid must be square and fully functional. Ensure all words are correctly placed and the clues match. The response MUST be a valid JSON object matching the provided schema.`;
+    const systemInstruction = `Tu es un générateur de mots croisés expert. Crée une grille de mots croisés sur le thème fourni. La grille doit être carrée, d'une taille d'environ 10x10.
+    La réponse DOIT être au format JSON.
+    - 'size': La taille de la grille (ex: 10).
+    - 'grid': Un tableau de tableaux représentant la grille. Utilise la lettre (une chaîne de caractère majuscule) pour les cases remplies et la valeur JSON 'null' pour les cases noires.
+    - 'clues': Un objet avec deux clés, 'across' et 'down'.
+    - Chaque clé contient un tableau d'objets avec 'number', 'clue', 'row' (0-indexed), et 'col' (0-indexed) pour chaque mot.`;
 
-    const prompt = `Create a ${size}x${size} crossword puzzle on the theme: "${theme}". The grid should be a 2D array where empty cells for letters are represented by a single uppercase letter, and black squares are represented by the string "#". The clues should be numbered correctly and correspond to the grid layout.`;
-
-    const clueSchema = {
-        type: Type.OBJECT,
-        properties: {
-            number: { type: Type.NUMBER },
-            clue: { type: Type.STRING },
-            row: { type: Type.NUMBER },
-            col: { type: Type.NUMBER },
-        },
-        required: ["number", "clue", "row", "col"]
-    };
+    const prompt = `Génère une grille de mots croisés sur le thème : "${theme}"`;
 
     try {
         const response = await ai.models.generateContent({
@@ -1385,37 +1381,55 @@ export async function generateCrossword(theme: string): Promise<CrosswordData> {
                 responseSchema: {
                     type: Type.OBJECT,
                     properties: {
-                        theme: { type: Type.STRING },
-                        size: { type: Type.NUMBER },
+                        size: { type: Type.INTEGER },
                         grid: {
                             type: Type.ARRAY,
                             items: {
                                 type: Type.ARRAY,
-                                items: { type: Type.STRING } // Represents a letter or "#"
+                                items: { type: Type.STRING }
                             }
                         },
                         clues: {
                             type: Type.OBJECT,
                             properties: {
-                                across: { type: Type.ARRAY, items: clueSchema },
-                                down: { type: Type.ARRAY, items: clueSchema },
+                                across: {
+                                    type: Type.ARRAY,
+                                    items: {
+                                        type: Type.OBJECT,
+                                        properties: {
+                                            number: { type: Type.INTEGER },
+                                            clue: { type: Type.STRING },
+                                            row: { type: Type.INTEGER },
+                                            col: { type: Type.INTEGER }
+                                        },
+                                        required: ["number", "clue", "row", "col"]
+                                    }
+                                },
+                                down: {
+                                    type: Type.ARRAY,
+                                    items: {
+                                        type: Type.OBJECT,
+                                        properties: {
+                                            number: { type: Type.INTEGER },
+                                            clue: { type: Type.STRING },
+                                            row: { type: Type.INTEGER },
+                                            col: { type: Type.INTEGER }
+                                        },
+                                        required: ["number", "clue", "row", "col"]
+                                    }
+                                }
                             },
                             required: ["across", "down"]
                         }
                     },
-                    required: ["theme", "size", "grid", "clues"]
+                    required: ["size", "grid", "clues"]
                 }
             }
         });
         const jsonString = response.text;
-        const data = JSON.parse(jsonString);
-        
-        // Post-process grid to replace "#" with null for easier frontend handling
-        data.grid = data.grid.map((row: string[]) => row.map((cell: string) => cell === '#' ? null : cell));
-
-        return data as CrosswordData;
+        return JSON.parse(jsonString) as CrosswordData;
     } catch (error) {
         console.error("Error generating crossword:", error);
-        throw new Error("Impossible de générer des mots croisés pour ce thème. Veuillez essayer un thème plus général.");
+        throw new Error("Impossible de générer la grille de mots croisés.");
     }
 }

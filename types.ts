@@ -56,7 +56,6 @@ export enum AppState {
   TRAINING,
   TRAINING_PROTECT,
   TRAINING_ALERT,
-  CROSSWORD,
   ERROR,
 }
 
@@ -272,24 +271,6 @@ export interface TrainingScenario {
     debrief: string;
 }
 
-// Types for Crossword
-export interface CrosswordClue {
-  number: number;
-  clue: string;
-  row: number;
-  col: number;
-}
-
-export interface CrosswordData {
-  theme: string;
-  size: number;
-  grid: (string | null)[][];
-  clues: {
-    across: CrosswordClue[];
-    down: CrosswordClue[];
-  };
-}
-
 
 // Types for User Settings & Profile
 export interface UserSettings {
@@ -306,3 +287,21 @@ export interface UserSettings {
 }
 
 export type UserProfileData = Partial<Omit<PatientContext, 'age'> & { age: string }>;
+
+// FIX: Add missing types for Crossword feature
+// Types for Crossword
+export interface CrosswordClue {
+  number: number;
+  clue: string;
+  row: number;
+  col: number;
+}
+
+export interface CrosswordData {
+  size: number;
+  grid: (string | null)[][];
+  clues: {
+    across: CrosswordClue[];
+    down: CrosswordClue[];
+  };
+}

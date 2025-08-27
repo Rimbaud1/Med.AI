@@ -1,7 +1,7 @@
 
 
 import React, { useState } from 'react';
-import { StethoscopeIcon, ClipboardDocumentCheckIcon, ShieldExclamationIcon, ShieldCheckIcon, BeakerIcon, InformationCircleIcon, BookOpenIcon, Cog6ToothIcon, PillIcon, AcademicCapIcon, NewspaperIcon } from '../icons';
+import { StethoscopeIcon, ClipboardDocumentCheckIcon, ShieldExclamationIcon, ShieldCheckIcon, BeakerIcon, InformationCircleIcon, BookOpenIcon, Cog6ToothIcon, PillIcon, AcademicCapIcon } from '../icons';
 
 interface LandingScreenProps {
   onStartDiagnosis: () => void;
@@ -14,10 +14,9 @@ interface LandingScreenProps {
   onGoToJournal: () => void;
   onGoToPillbox: () => void;
   onStartTraining: () => void;
-  onNavigateToCrossword: () => void;
 }
 
-const LandingScreen: React.FC<LandingScreenProps> = ({ onStartDiagnosis, onEmergency, onStartPreventionPlan, onDirectDiagnosisSubmit, onShowHowItWorks, onShowSettings, hasJournalData, onGoToJournal, onGoToPillbox, onStartTraining, onNavigateToCrossword }) => {
+const LandingScreen: React.FC<LandingScreenProps> = ({ onStartDiagnosis, onEmergency, onStartPreventionPlan, onDirectDiagnosisSubmit, onShowHowItWorks, onShowSettings, hasJournalData, onGoToJournal, onGoToPillbox, onStartTraining }) => {
   const [directDiagnosis, setDirectDiagnosis] = useState('');
 
   const handleDirectSubmit = (e: React.FormEvent) => {
@@ -180,26 +179,6 @@ const LandingScreen: React.FC<LandingScreenProps> = ({ onStartDiagnosis, onEmerg
                 {hasJournalData ? "Ouvrir" : "Verrouillé"}
               </span>
             </div>
-        </div>
-         <div 
-          className="bg-slate-800/70 p-6 md:p-8 rounded-xl border border-slate-700 hover:border-orange-500 hover:bg-slate-800 transition-all duration-300 flex flex-col md:flex-row text-center md:text-left items-center cursor-pointer group"
-          onClick={onNavigateToCrossword}
-          role="button"
-          tabIndex={0}
-          aria-label="Jouer aux mots croisés générés par IA"
-        >
-          <div className="flex-shrink-0 bg-orange-500/10 p-4 rounded-full mb-4 md:mb-0 md:mr-6 border border-orange-500/30 transition-colors duration-300 group-hover:bg-orange-500/20">
-            <NewspaperIcon className="h-10 w-10 text-orange-400" />
-          </div>
-          <div className="flex-grow">
-            <h2 className="text-2xl font-bold text-slate-100">Détente Cérébrale : Mots Croisés IA</h2>
-            <p className="mt-2 text-slate-400">
-              Générez une grille de mots croisés unique sur le thème de votre choix pour stimuler votre esprit.
-            </p>
-          </div>
-          <span className="mt-6 md:mt-0 md:ml-auto md:ml-6 whitespace-nowrap bg-orange-600 text-white font-bold py-2 px-6 rounded-lg group-hover:bg-orange-500 transition-colors duration-300">
-            Jouer
-          </span>
         </div>
       </div>
       
