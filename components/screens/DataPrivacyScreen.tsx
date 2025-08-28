@@ -1,5 +1,6 @@
 
 
+
 import React from 'react';
 import { ShieldCheckIcon, ClipboardListIcon, BookOpenIcon, BeakerIcon, PillIcon } from '../icons';
 
@@ -46,15 +47,16 @@ const DataPrivacyScreen: React.FC<DataPrivacyScreenProps> = ({ onBack }) => {
                 <li>Fermez l'onglet ou le navigateur.</li>
                 <li>Actualisez la page.</li>
             </ul>
-             <p><strong>Conclusion :</strong> Aucune trace de votre consultation n'est conservée une fois celle-ci terminée.</p>
+             <p><strong>Conclusion :</strong> Aucune trace de votre consultation n'est conservée une fois celle-ci terminée, sauf si vous décidez de la sauvegarder dans votre historique.</p>
         </Section>
 
         <Section title="2. Données Persistantes (Stockage Local)" icon={<BookOpenIcon className="h-7 w-7 text-purple-400" />}>
-            <p><strong>Qu'est-ce que c'est ?</strong> Ce sont les données que vous choisissez explicitement de conserver pour améliorer votre expérience future. Cela concerne quatre fonctionnalités :</p>
+            <p><strong>Qu'est-ce que c'est ?</strong> Ce sont les données que vous choisissez explicitement de conserver pour améliorer votre expérience future. Cela concerne cinq fonctionnalités :</p>
             <ul className="list-disc list-inside pl-4 font-semibold">
                 <li>Le <strong>Profil de Pré-remplissage</strong> (données de contexte)</li>
                 <li>Le <strong>Journal de Santé</strong> (suivi de symptômes : nom, date, intensité, notes)</li>
                 <li>Le <strong>Pilulier Intelligent</strong> (nom du médicament, posologie, durée, suivi des effets)</li>
+                <li>L'<strong>Historique des Bilans</strong> (le rapport complet, le contexte et les symptômes initiaux)</li>
                 <li>La <strong>Progression de la Formation</strong> (un simple indicateur des modules complétés, ex: <code>{"protect": true}</code>)</li>
             </ul>
             <p><strong>Où sont-elles stockées ?</strong> Dans le <code>localStorage</code> de votre navigateur. C'est un petit espace de stockage (~5-10 Mo) sécurisé, propre à chaque site web, directement sur le disque dur de votre appareil.</p>

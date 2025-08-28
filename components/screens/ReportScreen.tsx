@@ -1,5 +1,6 @@
 
 
+
 import React, { useState } from 'react';
 import type { ReportData, PatientContext } from '../../types';
 import { WarningIcon, PillIcon, ClipboardListIcon, HeartIcon, ChatBubbleLeftRightIcon, DocumentArrowDownIcon, ClipboardIcon, ClipboardDocumentCheckIcon, ArrowTrendingUpIcon, MapPinIcon, CalendarDaysIcon, ClockIcon, AcademicCapIcon, EnvelopeIcon, ChartBarIcon } from '../icons';
@@ -16,12 +17,14 @@ interface ReportScreenProps {
   onGoToPillbox: () => void;
   onAddPrescriptionToPillbox: (medicationNames: string[]) => Promise<void>;
   isDirectFlow?: boolean;
+  fromHistory?: boolean;
 }
 
 const ReportScreen: React.FC<ReportScreenProps> = (props) => {
   const { 
     report, patientContext, onReset, onStartSupportChat, onGoToSummary, onGoToAppointmentPrep, 
-    onGoToScenarioSimulator, onStartTracking, onGoToPillbox, onAddPrescriptionToPillbox, isDirectFlow = false 
+    onGoToScenarioSimulator, onStartTracking, onGoToPillbox, onAddPrescriptionToPillbox, 
+    isDirectFlow = false, fromHistory = false 
   } = props;
 
   const [copyButtonText, setCopyButtonText] = useState('Copier le résumé');
@@ -83,6 +86,12 @@ const ReportScreen: React.FC<ReportScreenProps> = (props) => {
   const specialistName = report.suggestedSpecialist?.name || 'Médecin Généraliste';
 
   const effectiveLocation = patientContext?.location || locationInput;
+
+  const finishButtonText = isDirectFlow
+    ? "Retour à l'accueil"
+    : fromHistory
+    ? "Retour à l'historique"
+    : "Commencer un Nouveau Diagnostic";
 
 
   const Section: React.FC<{ title: string; icon: React.ReactNode; children: React.ReactNode }> = ({ title, icon, children }) => (
@@ -316,7 +325,7 @@ const ReportScreen: React.FC<ReportScreenProps> = (props) => {
           onClick={onReset}
           className="bg-sky-600 text-white font-bold py-3 px-8 rounded-lg hover:bg-sky-500 transition duration-200"
         >
-          {isDirectFlow ? "Retour à l'accueil" : "Commencer un Nouveau Diagnostic"}
+          {finishButtonText}
         </button>
       </div>
 

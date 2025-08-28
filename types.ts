@@ -42,6 +42,7 @@ export enum AppState {
   SYMPTOM_JOURNAL_SETUP,
   SYMPTOM_JOURNAL,
   DIAGNOSTIC_SUMMARY,
+  DIAGNOSTIC_HISTORY,
   PSYCHOLOGICAL_SUPPORT,
   GENERATING_APPOINTMENT_PREP,
   MEDICAL_APPOINTMENT_PREP,
@@ -290,7 +291,17 @@ export interface UserSettings {
 
 export type UserProfileData = Partial<Omit<PatientContext, 'age'> & { age: string }>;
 
-// FIX: Add missing types for Crossword feature
+// Types for Diagnostic History
+export interface DiagnosticHistoryEntry {
+  id: string; // timestamp
+  name: string;
+  date: string; // ISO string
+  report: ReportData;
+  patientContext: PatientContext;
+  initialSymptoms: string;
+  isDirectFlow: boolean;
+}
+
 // Types for Crossword
 export interface CrosswordClue {
   number: number;

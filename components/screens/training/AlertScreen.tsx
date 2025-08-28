@@ -155,10 +155,8 @@ const AlertScreen: React.FC<AlertScreenProps> = ({ onComplete, onBack }) => {
                     </>
                 );
             case 'scenarioLoading':
-// FIX: The 'isComplete' prop was missing on the Loader component.
                 return <Loader text="Chargement des scénarios..." isComplete={false} />;
             case 'scenarioActive':
-// FIX: The 'isComplete' prop was missing on the Loader component.
                 if (!currentScenario) return <Loader text="Chargement..." isComplete={false} />;
                 const currentQuestion = currentScenario.questions[currentQuestionIndex];
                 return (

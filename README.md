@@ -35,10 +35,11 @@ Once the assessment is complete, Med.AI generates a detailed report that include
 - **Actionable Recommendations:** Concrete next steps for the user.
 - **Suggested OTC Prescription:** Non-prescriptive product suggestions.
 - **Intelligent Specialist Referral:** Recommends the most relevant medical specialist (e.g., General Practitioner, Pediatrician, Dermatologist) and provides a direct link to book an appointment on Doctolib, pre-filled with the specialty and user's location.
-- **PDF Export:** A beautifully formatted, detailed summary of the entire consultation, perfect for sharing with a healthcare professional.
+- **Detailed PDF Export:** Generates a comprehensive PDF summary of the entire consultation—including every question asked and answer provided—perfect for sharing with a healthcare professional.
 
 ### 4. Post-Diagnosis Support Suite
 The journey doesn't end with the report. Med.AI offers a unique suite of tools to empower the user:
+- **Diagnostic History:** Securely saves all past diagnostic reports on your device. You can review, compare, and delete old reports at any time, providing a long-term overview of your health consultations.
 - **Appointment Preparation:** Generates a script to help users explain their situation to a doctor and a list of potential questions the doctor might ask.
 - **Evolution Simulator:** Projects three possible evolution scenarios (Favorable, To Monitor, Worrying) for the next 48 hours, detailing signs to watch for and actions to take.
 - **Psychological Support Chat ("Aura"):** An AI-powered chat assistant with an adjustable empathy level (from 'Direct' to 'Very Empathetic') to discuss the report and alleviate anxiety.

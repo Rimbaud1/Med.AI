@@ -1,4 +1,6 @@
 
+
+
 import React from 'react';
 import { 
     InformationCircleIcon, 
@@ -23,7 +25,8 @@ import {
     HandThumbUpIcon,
     SpeakerWaveIcon,
     BookOpenIcon,
-    AcademicCapIcon
+    AcademicCapIcon,
+    NewspaperIcon
 } from '../icons';
 
 interface HowItWorksScreenProps {
@@ -110,7 +113,7 @@ const HowItWorksScreen: React.FC<HowItWorksScreenProps> = ({ onBackToLanding }) 
                         </FeatureCard>
 
                         <FeatureCard title="Les Outils d'Action Post-Bilan" icon={<SparklesIcon className="h-8 w-8 text-sky-400" />}>
-                           <p>Le rapport n'est pas une finalité, c'est un point de départ. Il débloque une suite d'outils uniques conçus pour vous accompagner :</p>
+                           <p>Le rapport n'est pas une finalité, c'est un point de départ. Chaque bilan est <strong>automatiquement sauvegardé</strong> dans votre historique local. Il débloque une suite d'outils uniques conçus pour vous accompagner :</p>
                            <ul className="list-disc list-inside space-y-3 pl-2">
                                 <li><strong><DocumentArrowDownIcon className="h-5 w-5 inline-block -mt-1 mr-1"/>Télécharger le Bilan PDF :</strong> Génère un document PDF ultra-détaillé qui récapitule <strong>chaque réponse de votre parcours</strong>. Un document inestimable à archiver ou à partager avec un professionnel de santé, qui verra ainsi tout votre cheminement de pensée.</li>
                                 <li><strong><ClipboardDocumentCheckIcon className="h-5 w-5 inline-block -mt-1 mr-1"/>Préparer ma Consultation :</strong> Pour réduire le stress d'un rdv médical, cet outil génère un <strong>script simple</strong> ("Bonjour Docteur, je viens vous voir car...") que vous pouvez lire, ainsi qu'une liste de <strong>questions probables</strong> que le médecin pourrait vous poser, pour que vous puissiez préparer vos réponses.</li>
@@ -125,6 +128,14 @@ const HowItWorksScreen: React.FC<HowItWorksScreenProps> = ({ onBackToLanding }) 
                 <div>
                     <h2 className="text-3xl font-bold text-center text-slate-200 mb-6 pb-3 border-b-2 border-slate-700">Nos Outils Proactifs et Stratégiques</h2>
                      <div className="space-y-6">
+                        <FeatureCard title="Historique des Bilans" icon={<NewspaperIcon className="h-8 w-8 text-sky-400" />}>
+                           <p>Chaque diagnostic que vous complétez est automatiquement et <strong>localement sauvegardé sur votre appareil</strong>. Accessible depuis l'accueil, l'historique vous permet de :</p>
+                            <ul className="list-disc list-inside pl-2 space-y-2">
+                                <li><strong>Consulter</strong> à tout moment un rapport antérieur dans son intégralité.</li>
+                                <li><strong>Suivre</strong> l'évolution de votre santé sur le long terme en comparant différents bilans.</li>
+                                <li><strong>Gérer</strong> vos données en supprimant les anciens bilans dont vous n'avez plus besoin.</li>
+                           </ul>
+                        </FeatureCard>
                         <FeatureCard title="Plan de Prévention & Analyse de Risques" icon={<ShieldCheckIcon className="h-8 w-8 text-sky-400" />}>
                             <p>La santé, c'est aussi anticiper. Cet outil vous permet de remplir un profil sur vos habitudes de vie et vos antécédents. En retour, l'IA ne se contente pas de donner des conseils génériques :</p>
                             <ul className="list-disc list-inside pl-2 space-y-2">

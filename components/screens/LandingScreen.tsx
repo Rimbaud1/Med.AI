@@ -1,7 +1,8 @@
 
 
+
 import React, { useState } from 'react';
-import { StethoscopeIcon, ClipboardDocumentCheckIcon, ShieldExclamationIcon, ShieldCheckIcon, BeakerIcon, InformationCircleIcon, BookOpenIcon, Cog6ToothIcon, PillIcon, AcademicCapIcon } from '../icons';
+import { StethoscopeIcon, ClipboardDocumentCheckIcon, ShieldExclamationIcon, ShieldCheckIcon, BeakerIcon, InformationCircleIcon, BookOpenIcon, Cog6ToothIcon, PillIcon, AcademicCapIcon, NewspaperIcon } from '../icons';
 
 interface LandingScreenProps {
   onStartDiagnosis: () => void;
@@ -14,9 +15,15 @@ interface LandingScreenProps {
   onGoToJournal: () => void;
   onGoToPillbox: () => void;
   onStartTraining: () => void;
+  hasHistory: boolean;
+  onGoToHistory: () => void;
 }
 
-const LandingScreen: React.FC<LandingScreenProps> = ({ onStartDiagnosis, onEmergency, onStartPreventionPlan, onDirectDiagnosisSubmit, onShowHowItWorks, onShowSettings, hasJournalData, onGoToJournal, onGoToPillbox, onStartTraining }) => {
+const LandingScreen: React.FC<LandingScreenProps> = ({ 
+    onStartDiagnosis, onEmergency, onStartPreventionPlan, onDirectDiagnosisSubmit, 
+    onShowHowItWorks, onShowSettings, hasJournalData, onGoToJournal, onGoToPillbox, 
+    onStartTraining, hasHistory, onGoToHistory 
+}) => {
   const [directDiagnosis, setDirectDiagnosis] = useState('');
 
   const handleDirectSubmit = (e: React.FormEvent) => {
@@ -43,12 +50,17 @@ const LandingScreen: React.FC<LandingScreenProps> = ({ onStartDiagnosis, onEmerg
         <span className="text-red-400 text-sm font-semibold">Cet outil ne remplace pas un avis médical professionnel.</span>
       </p>
 
-      <button onClick={onShowHowItWorks} className="mt-6 flex items-center gap-2 text-sky-400 hover:text-sky-300 transition-colors">
-        <InformationCircleIcon className="h-5 w-5" />
-        <span className="font-semibold">Comment ça fonctionne ?</span>
-      </button>
+      <div className="w-full mt-8">
+        <button 
+          onClick={onShowHowItWorks} 
+          className="w-full bg-slate-800/70 border border-slate-700 rounded-xl p-4 flex items-center justify-center gap-3 text-lg text-sky-300 hover:bg-slate-800 hover:border-sky-500 transition-all duration-300"
+        >
+          <InformationCircleIcon className="h-6 w-6" />
+          <span className="font-bold">Découvrir le fonctionnement de Med.AI</span>
+        </button>
+      </div>
 
-      <div className="w-full mt-8 space-y-6">
+      <div className="w-full mt-6 space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Pre-diagnosis Card */}
           <div 
@@ -91,51 +103,28 @@ const LandingScreen: React.FC<LandingScreenProps> = ({ onStartDiagnosis, onEmerg
           </div>
         </div>
 
-        {/* Prevention Plan Card */}
-        <div 
-          className="bg-slate-800/70 p-6 md:p-8 rounded-xl border border-slate-700 hover:border-teal-500 hover:bg-slate-800 transition-all duration-300 flex flex-col md:flex-row text-center md:text-left items-center cursor-pointer group"
-          onClick={onStartPreventionPlan}
-          role="button"
-          tabIndex={0}
-          aria-label="Démarrer un plan de prévention personnalisé"
-        >
-          <div className="flex-shrink-0 bg-teal-500/10 p-4 rounded-full mb-4 md:mb-0 md:mr-6 border border-teal-500/30 transition-colors duration-300 group-hover:bg-teal-500/20">
-            <ShieldCheckIcon className="h-10 w-10 text-teal-400" />
-          </div>
-          <div className="flex-grow">
-            <h2 className="text-2xl font-bold text-slate-100">Plan de Prévention Personnalisé</h2>
-            <p className="mt-2 text-slate-400">
-              Recevez des recommandations proactives (dépistages, vaccins, conseils) basées sur votre profil pour prendre soin de votre santé à long terme.
-            </p>
-          </div>
-          <span className="mt-6 md:mt-0 md:ml-auto md:ml-6 whitespace-nowrap bg-teal-600 text-white font-bold py-2 px-6 rounded-lg group-hover:bg-teal-500 transition-colors duration-300">
-            Démarrer
-          </span>
-        </div>
-
-        {/* First Aid Training Card */}
-        <div 
-          className="bg-slate-800/70 p-6 md:p-8 rounded-xl border border-slate-700 hover:border-cyan-500 hover:bg-slate-800 transition-all duration-300 flex flex-col md:flex-row text-center md:text-left items-center cursor-pointer group"
-          onClick={onStartTraining}
-          role="button"
-          tabIndex={0}
-          aria-label="Se former aux premiers secours"
-        >
-          <div className="flex-shrink-0 bg-cyan-500/10 p-4 rounded-full mb-4 md:mb-0 md:mr-6 border border-cyan-500/30 transition-colors duration-300 group-hover:bg-cyan-500/20">
-            <AcademicCapIcon className="h-10 w-10 text-cyan-400" />
-          </div>
-          <div className="flex-grow">
-            <h2 className="text-2xl font-bold text-slate-100">Se former aux premiers secours</h2>
-            <p className="mt-2 text-slate-400">
-              Apprenez les gestes qui sauvent et préparez-vous à réagir efficacement en cas d'urgence grâce à notre guide interactif.
-            </p>
-          </div>
-          <span className="mt-6 md:mt-0 md:ml-auto md:ml-6 whitespace-nowrap bg-cyan-600 text-white font-bold py-2 px-6 rounded-lg group-hover:bg-cyan-500 transition-colors duration-300">
-            Se former
-          </span>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* History Card */}
+             <div 
+              className={`bg-slate-800/70 p-8 rounded-xl border border-slate-700 transition-all duration-300 flex flex-col text-center items-center group ${hasHistory ? 'cursor-pointer hover:border-cyan-500 hover:bg-slate-800' : 'opacity-60 cursor-not-allowed'}`}
+              onClick={hasHistory ? onGoToHistory : undefined}
+              role="button"
+              tabIndex={hasHistory ? 0 : -1}
+              aria-label="Consulter l'historique des bilans"
+            >
+              <div className="flex-shrink-0 bg-cyan-500/10 p-4 rounded-full mb-4 border border-cyan-500/30 transition-colors duration-300 group-hover:bg-cyan-500/20">
+                <NewspaperIcon className="h-10 w-10 text-cyan-400" />
+              </div>
+              <div className="flex-grow flex flex-col">
+                <h2 className="text-2xl font-bold text-slate-100">Historique des Bilans</h2>
+                <p className="mt-2 text-slate-400 flex-grow">
+                  {hasHistory ? "Consultez, comparez et gérez vos précédents bilans de santé." : "Aucun bilan sauvegardé pour le moment."}
+                </p>
+              </div>
+              <span className={`mt-6 whitespace-nowrap text-white font-bold py-2 px-6 rounded-lg transition-colors duration-300 ${hasHistory ? 'bg-cyan-600 group-hover:bg-cyan-500' : 'bg-slate-700'}`}>
+                {hasHistory ? "Consulter" : "Verrouillé"}
+              </span>
+            </div>
             {/* Pillbox Card */}
             <div 
               className="bg-slate-800/70 p-8 rounded-xl border border-slate-700 hover:border-amber-500 hover:bg-slate-800 transition-all duration-300 flex flex-col text-center items-center cursor-pointer group"
@@ -150,17 +139,16 @@ const LandingScreen: React.FC<LandingScreenProps> = ({ onStartDiagnosis, onEmerg
               <div className="flex-grow flex flex-col">
                 <h2 className="text-2xl font-bold text-slate-100">Pilulier Intelligent</h2>
                 <p className="mt-2 text-slate-400 flex-grow">
-                  Gérez vos traitements, recevez des rappels et suivez les effets secondaires avec l'aide de l'IA.
+                  Gérez vos traitements, recevez des rappels et suivez les effets secondaires.
                 </p>
               </div>
               <span className="mt-6 whitespace-nowrap bg-amber-600 text-white font-bold py-2 px-6 rounded-lg group-hover:bg-amber-500 transition-colors duration-300">
                 Ouvrir
               </span>
             </div>
-
             {/* Symptom Journal Card */}
             <div 
-              className={`bg-slate-800/70 p-8 rounded-xl border border-slate-700 hover:border-purple-500 hover:bg-slate-800 transition-all duration-300 flex flex-col text-center items-center group ${hasJournalData ? 'cursor-pointer' : 'opacity-60 cursor-not-allowed'}`}
+              className={`bg-slate-800/70 p-8 rounded-xl border border-slate-700 transition-all duration-300 flex flex-col text-center items-center group ${hasJournalData ? 'cursor-pointer hover:border-purple-500 hover:bg-slate-800' : 'opacity-60 cursor-not-allowed'}`}
               onClick={hasJournalData ? onGoToJournal : undefined}
               role="button"
               tabIndex={hasJournalData ? 0 : -1}
@@ -172,11 +160,56 @@ const LandingScreen: React.FC<LandingScreenProps> = ({ onStartDiagnosis, onEmerg
               <div className="flex-grow flex flex-col">
                 <h2 className="text-2xl font-bold text-slate-100">Mon Journal de Santé</h2>
                 <p className="mt-2 text-slate-400 flex-grow">
-                  {hasJournalData ? "Consultez et mettez à jour le suivi de vos symptômes." : "Disponible après votre premier diagnostic pour suivre l'évolution de vos symptômes."}
+                  {hasJournalData ? "Consultez et mettez à jour le suivi de vos symptômes." : "Disponible après votre premier diagnostic."}
                 </p>
               </div>
               <span className={`mt-6 whitespace-nowrap text-white font-bold py-2 px-6 rounded-lg transition-colors duration-300 ${hasJournalData ? 'bg-purple-600 group-hover:bg-purple-500' : 'bg-slate-700'}`}>
                 {hasJournalData ? "Ouvrir" : "Verrouillé"}
+              </span>
+            </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Prevention Plan Card */}
+            <div 
+              className="bg-slate-800/70 p-8 rounded-xl border border-slate-700 hover:border-teal-500 hover:bg-slate-800 transition-all duration-300 flex flex-col text-center items-center cursor-pointer group"
+              onClick={onStartPreventionPlan}
+              role="button"
+              tabIndex={0}
+              aria-label="Démarrer un plan de prévention personnalisé"
+            >
+              <div className="flex-shrink-0 bg-teal-500/10 p-4 rounded-full mb-4 border border-teal-500/30 transition-colors duration-300 group-hover:bg-teal-500/20">
+                <ShieldCheckIcon className="h-10 w-10 text-teal-400" />
+              </div>
+              <div className="flex-grow">
+                <h2 className="text-2xl font-bold text-slate-100">Plan de Prévention</h2>
+                <p className="mt-2 text-slate-400 flex-grow">
+                  Recevez des recommandations proactives basées sur votre profil pour prendre soin de votre santé à long terme.
+                </p>
+              </div>
+              <span className="mt-6 whitespace-nowrap bg-teal-600 text-white font-bold py-2 px-6 rounded-lg group-hover:bg-teal-500 transition-colors duration-300">
+                Démarrer
+              </span>
+            </div>
+            {/* First Aid Training Card */}
+            <div 
+              className="bg-slate-800/70 p-8 rounded-xl border border-slate-700 hover:border-indigo-500 hover:bg-slate-800 transition-all duration-300 flex flex-col text-center items-center cursor-pointer group"
+              onClick={onStartTraining}
+              role="button"
+              tabIndex={0}
+              aria-label="Se former aux premiers secours"
+            >
+              <div className="flex-shrink-0 bg-indigo-500/10 p-4 rounded-full mb-4 border border-indigo-500/30 transition-colors duration-300 group-hover:bg-indigo-500/20">
+                <AcademicCapIcon className="h-10 w-10 text-indigo-400" />
+              </div>
+              <div className="flex-grow">
+                <h2 className="text-2xl font-bold text-slate-100">Formation Premiers Secours</h2>
+                <p className="mt-2 text-slate-400 flex-grow">
+                  Apprenez les gestes qui sauvent et préparez-vous à réagir efficacement en cas d'urgence via notre guide interactif.
+                </p>
+              </div>
+              <span className="mt-6 whitespace-nowrap bg-indigo-600 text-white font-bold py-2 px-6 rounded-lg group-hover:bg-indigo-500 transition-colors duration-300">
+                Se former
               </span>
             </div>
         </div>

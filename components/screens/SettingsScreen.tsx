@@ -1,8 +1,9 @@
 
 
+
 import React, { useState, useEffect } from 'react';
-import type { UserSettings, TrackedSymptom, Medication, TrainingProgress } from '../../types';
-import { Cog6ToothIcon, InformationCircleIcon, CheckCircleIcon } from '../icons';
+import type { UserSettings, TrackedSymptom, Medication, TrainingProgress, DiagnosticHistoryEntry } from '../../types';
+import { Cog6ToothIcon, InformationCircleIcon, CheckCircleIcon, NewspaperIcon } from '../icons';
 
 interface SettingsScreenProps {
   onBackToLanding: () => void;
@@ -11,10 +12,12 @@ interface SettingsScreenProps {
   journalData: TrackedSymptom[];
   pillboxData: Medication[];
   trainingProgress: TrainingProgress;
+  diagnosticHistory: DiagnosticHistoryEntry[];
   onClearJournal: () => void;
   onClearPillbox: () => void;
   onClearProfile: () => void;
   onClearTrainingProgress: () => void;
+  onClearHistory: () => void;
   onShowDataPrivacy: () => void;
 }
 
@@ -51,8 +54,8 @@ const Toggle: React.FC<{
 const SettingsScreen: React.FC<SettingsScreenProps> = (props) => {
   const { 
     onBackToLanding, settings, onSettingsChange, journalData, pillboxData, 
-    trainingProgress, onClearJournal, onClearPillbox, onClearProfile, 
-    onClearTrainingProgress, onShowDataPrivacy 
+    trainingProgress, diagnosticHistory, onClearJournal, onClearPillbox, onClearProfile, 
+    onClearTrainingProgress, onClearHistory, onShowDataPrivacy 
   } = props;
 
   const [apiKeyInput, setApiKeyInput] = useState('');
@@ -96,6 +99,12 @@ const SettingsScreen: React.FC<SettingsScreenProps> = (props) => {
       onClearTrainingProgress();
     }
   };
+  
+  const handleClearHistory = () => {
+    if(window.confirm("Êtes-vous sûr de vouloir supprimer DÉFINITIVEMENT l'historique de tous vos bilans ? Cette action est irréversible.")) {
+      onClearHistory();
+    }
+  }
 
 
   const handleSelectAll = () => {
@@ -210,6 +219,15 @@ const SettingsScreen: React.FC<SettingsScreenProps> = (props) => {
             </button>
           </div>
           <div className="space-y-4">
+             <div className="p-4 rounded-lg bg-slate-800/60 border border-slate-700/80 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div>
+                  <h4 className="font-semibold text-slate-200">Historique des Bilans</h4>
+                  <p className="text-sm text-slate-400">{diagnosticHistory.length > 0 ? `${diagnosticHistory.length} bilan(s) sauvegardé(s).` : "Aucun bilan dans l'historique."}</p>
+                </div>
+                <button onClick={handleClearHistory} disabled={diagnosticHistory.length === 0} className="w-full sm:w-auto bg-red-600/80 text-white font-bold py-2 px-4 rounded-lg hover:bg-red-500 disabled:bg-slate-700 disabled:text-slate-400 disabled:cursor-not-allowed transition-colors">
+                  Vider l'historique
+                </button>
+            </div>
              <div className="p-4 rounded-lg bg-slate-800/60 border border-slate-700/80 flex flex-col sm:flex-row items-center justify-between gap-4">
                 <div>
                   <h4 className="font-semibold text-slate-200">Journal de Santé</h4>
