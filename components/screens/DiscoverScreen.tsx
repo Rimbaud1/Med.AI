@@ -88,9 +88,14 @@ const colorVariants = {
 
 const DiscoverScreen: React.FC<DiscoverScreenProps> = ({ onBackToLanding }) => {
     const [activeSlide, setActiveSlide] = useState(0);
+    const [activeSubSlides, setActiveSubSlides] = useState<Record<number, number>>({});
+
     const containerRef = useRef<HTMLDivElement>(null);
     const slideRefs = useRef<(HTMLDivElement | null)[]>([]);
+    const horizontalScrollersRef = useRef<(HTMLDivElement | null)[]>([]);
+    const featureCardRefs = useRef(new Map<string, HTMLDivElement | null>());
 
+    // Vertical scroll observer
     useEffect(() => {
         const observer = new IntersectionObserver(
             (entries) => {
@@ -116,6 +121,43 @@ const DiscoverScreen: React.FC<DiscoverScreenProps> = ({ onBackToLanding }) => {
             });
         };
     }, []);
+
+    // Horizontal scroll observers
+    useEffect(() => {
+        const observers: IntersectionObserver[] = [];
+        
+        horizontalScrollersRef.current.forEach((scroller, slideIndex) => {
+            if (!scroller) return;
+
+            const observer = new IntersectionObserver(
+                (entries) => {
+                    entries.forEach(entry => {
+                        if (entry.isIntersecting) {
+                            const featureIndex = parseInt(entry.target.getAttribute('data-feature-index') || '0');
+                            setActiveSubSlides(prev => ({ ...prev, [slideIndex]: featureIndex }));
+                        }
+                    });
+                },
+                { root: scroller, threshold: 0.5 }
+            );
+
+            for (let i = 0; i < slideData[slideIndex].features.length; i++) {
+                const cardRef = featureCardRefs.current.get(`${slideIndex}-${i}`);
+                if (cardRef) {
+                    observer.observe(cardRef);
+                }
+            }
+            observers.push(observer);
+        });
+
+        return () => {
+            observers.forEach(observer => observer.disconnect());
+        };
+    // The dependency array is empty to ensure this effect runs only once after the initial render,
+    // as the refs it depends on are populated during that render and are stable thereafter.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
     
     const scrollToSlide = (index: number) => {
         slideRefs.current[index]?.scrollIntoView({ behavior: 'smooth' });
@@ -124,6 +166,10 @@ const DiscoverScreen: React.FC<DiscoverScreenProps> = ({ onBackToLanding }) => {
     return (
         <div className="w-full h-screen bg-slate-900 font-sans relative overflow-hidden">
             <style>{`
+                .scrollbar-hide::-webkit-scrollbar { display: none; }
+                .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+                .scroll-behavior-smooth { scroll-behavior: smooth; }
+
                 .slide-content-enter {
                     opacity: 0;
                     transform: translateY(20px);
@@ -151,7 +197,7 @@ const DiscoverScreen: React.FC<DiscoverScreenProps> = ({ onBackToLanding }) => {
                 Retour à l'accueil
             </button>
 
-            {/* Side Navigation */}
+            {/* Vertical Side Navigation */}
             <div className="absolute left-5 top-1/2 -translate-y-1/2 z-20 flex flex-col gap-3">
                 {slideData.map((_, index) => {
                     const colors = colorVariants[slideData[index].color as keyof typeof colorVariants];
@@ -166,48 +212,76 @@ const DiscoverScreen: React.FC<DiscoverScreenProps> = ({ onBackToLanding }) => {
                 })}
             </div>
             
-            <div ref={containerRef} className="h-full w-full overflow-y-scroll snap-y snap-mandatory">
+            <div ref={containerRef} className="h-full w-full overflow-y-scroll snap-y snap-mandatory scroll-behavior-smooth">
                 {slideData.map((slide, index) => {
                     const colors = colorVariants[slide.color as keyof typeof colorVariants];
                     const Icon = slide.icon;
                     return (
                         <div
                             key={index}
-                            // FIX: Correct the ref callback to have a void return type by using a block body.
                             ref={el => { slideRefs.current[index] = el; }}
-                            className={`h-full w-full snap-start flex items-center justify-center p-6 md:p-10 relative overflow-hidden ${activeSlide === index ? 'slide-in' : ''}`}
+                            className={`h-full w-full snap-start flex flex-col items-center justify-center p-6 md:p-10 relative overflow-hidden ${activeSlide === index ? 'slide-in' : ''}`}
                         >
-                             <div className="w-full max-w-5xl mx-auto">
-                                <div className="flex flex-col items-center text-center gap-4 mb-10 slide-content-enter">
-                                    <div className={`${colors.accentBg} p-4 rounded-full border ${colors.border}`}>
-                                        <Icon className="h-10 w-10" />
-                                    </div>
-                                    <div>
-                                        <h1 className={`text-4xl md:text-5xl font-bold ${colors.text}`}>{slide.title}</h1>
-                                        <p className="mt-2 text-md md:text-lg text-slate-400 max-w-3xl mx-auto">{slide.subtitle}</p>
-                                    </div>
+                             <div className="flex-shrink-0 flex flex-col items-center text-center gap-4 mb-6 slide-content-enter">
+                                <div className={`${colors.accentBg} p-4 rounded-full border ${colors.border} transition-all duration-500 ${activeSlide === index ? 'scale-100' : 'scale-90'}`}>
+                                    <Icon className={`h-10 w-10 ${colors.text}`} />
                                 </div>
-                                <div className={`grid grid-cols-1 ${slide.features.length > 2 ? 'md:grid-cols-3' : 'md:grid-cols-2'} gap-6`}>
-                                   {slide.features.map((feature, fIndex) => {
-                                       const FeatureIcon = feature.icon;
-                                       return (
-                                           <div 
-                                                key={fIndex} 
-                                                style={{ transitionDelay: `${150 + fIndex * 100}ms` }} 
-                                                className="bg-slate-800/60 p-5 rounded-xl border border-slate-700/80 shadow-lg feature-card-enter backdrop-blur-sm"
-                                            >
-                                                <div className="flex items-center gap-3 mb-2">
-                                                    <div className={`flex-shrink-0 ${colors.text}`}><FeatureIcon className="h-6 w-6" /></div>
-                                                    <h3 className="font-bold text-slate-100">{feature.title}</h3>
-                                                </div>
-                                                <p className="text-slate-400 text-sm">{feature.description}</p>
-                                           </div>
-                                       );
-                                   })}
+                                <div>
+                                    <h1 className={`text-4xl md:text-5xl font-bold ${colors.text}`}>{slide.title}</h1>
+                                    <p className="mt-2 text-md text-slate-400 max-w-3xl mx-auto">{slide.subtitle}</p>
                                 </div>
                             </div>
+                             
+                             <div 
+                                ref={el => { horizontalScrollersRef.current[index] = el; }}
+                                className="w-full flex-grow flex items-center overflow-x-auto snap-x snap-mandatory scroll-behavior-smooth scrollbar-hide"
+                            >
+                                <div className="flex-shrink-0 w-[calc((100vw-min(80vw,1000px))/2)]"></div> {/* Spacer */}
+                                {slide.features.map((feature, fIndex) => {
+                                    const FeatureIcon = feature.icon;
+                                    return (
+                                        <div 
+                                            key={fIndex}
+                                            // FIX: The ref callback must return void or a cleanup function.
+                                            // The original implementation was implicitly returning the result of `Map.set()`, which is the map itself.
+                                            // Adding curly braces makes this a function body, which implicitly returns undefined.
+                                            ref={el => { featureCardRefs.current.set(`${index}-${fIndex}`, el); }}
+                                            data-feature-index={fIndex}
+                                            className="w-[min(80vw,1000px)] h-full flex-shrink-0 snap-center flex items-center justify-center p-4"
+                                        >
+                                           <div 
+                                                style={{ transitionDelay: `${150 + fIndex * 100}ms` }} 
+                                                className="w-full h-[80%] max-h-[450px] bg-slate-800/60 p-8 rounded-2xl border border-slate-700/80 shadow-2xl backdrop-blur-md flex flex-col items-center justify-center text-center feature-card-enter"
+                                            >
+                                                <div className={`flex-shrink-0 p-4 rounded-full ${colors.accentBg} border ${colors.border} mb-4`}>
+                                                    <FeatureIcon className={`h-10 w-10 ${colors.text}`} />
+                                                </div>
+                                                <h3 className="text-2xl font-bold text-slate-100">{feature.title}</h3>
+                                                <p className="text-slate-400 text-base mt-2 max-w-md">{feature.description}</p>
+                                           </div>
+                                        </div>
+                                    );
+                                })}
+                                <div className="flex-shrink-0 w-[calc((100vw-min(80vw,1000px))/2)]"></div> {/* Spacer */}
+                            </div>
+                            
+                             {/* Horizontal Navigation */}
+                            <div className="flex-shrink-0 flex justify-center gap-3 mt-4">
+                               {slide.features.map((_, fIndex) => (
+                                   <button
+                                        key={fIndex}
+                                        onClick={() => {
+                                            const cardRef = featureCardRefs.current.get(`${index}-${fIndex}`);
+                                            cardRef?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+                                        }}
+                                        className={`h-2.5 w-2.5 rounded-full transition-all duration-300 ${activeSubSlides[index] === fIndex ? `${colors.bg} scale-125` : 'bg-slate-600 hover:bg-slate-400'}`}
+                                        aria-label={`Go to feature ${fIndex + 1}`}
+                                   />
+                               ))}
+                            </div>
+
                         </div>
-                    )
+                    );
                 })}
             </div>
         </div>
