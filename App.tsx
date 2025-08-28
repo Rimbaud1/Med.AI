@@ -4,6 +4,7 @@
 
 
 
+
 import React, { useState, useCallback, useEffect } from 'react';
 import { AppState } from './types';
 import type { Question, Answer, ReportData, PatientContext, SymptomIntensity, PreQuestionnaireAnswer, SymptomCharacteristics, ChatMessage, AppointmentPrepData, EmpathyLevel, ScenarioData, PreventionProfile, PreventionPlanData, NeuroTest, StabilityTestResult, CapillaryRefillTimeResult, SpeechDyspneaResult, TrackedSymptom, SymptomLogEntry, UserSettings, UserProfileData, Medication, RiskAnalysis, TrendAnalysis, TrainingProgress, DiagnosticHistoryEntry } from './types';
@@ -53,6 +54,7 @@ import TrainingScreen from './components/screens/TrainingScreen';
 import ProtectScreen from './components/screens/training/ProtectScreen';
 import AlertScreen from './components/screens/training/AlertScreen';
 import { NewspaperIcon, TrashIcon, ClockIcon, HeartIcon } from './components/icons';
+import DiscoverScreen from './components/screens/DiscoverScreen';
 
 // FIX: Define a separate interface for DiagnosticHistoryScreen props to fix a potential type inference issue and improve code readability.
 interface DiagnosticHistoryScreenProps {
@@ -419,6 +421,10 @@ const App: React.FC = () => {
   const handleError = useCallback((errorMessage: string) => {
     setError(errorMessage);
     setAppState(AppState.ERROR);
+  }, []);
+
+  const handleNavigateToDiscoverApp = useCallback(() => {
+    setAppState(AppState.DISCOVER_APP);
   }, []);
 
   const handleNavigateToHowItWorks = useCallback(() => {
@@ -1179,8 +1185,10 @@ const App: React.FC = () => {
 
   const renderScreen = () => {
     switch (appState) {
+      case AppState.DISCOVER_APP:
+        return <DiscoverScreen onBackToLanding={handleReset} />;
       case AppState.LANDING:
-        return <LandingScreen onStartDiagnosis={handleNavigateToPreDiagnosis} onEmergency={handleNavigateToEmergencyGuide} onStartPreventionPlan={handleNavigateToPreventionPlan} onDirectDiagnosisSubmit={handleDirectDiagnosisSubmit} onShowHowItWorks={handleNavigateToHowItWorks} onShowSettings={handleNavigateToSettings} hasJournalData={journalData.length > 0} onGoToJournal={handleGoToJournal} onGoToPillbox={handleGoToPillbox} onStartTraining={handleNavigateToTraining} hasHistory={diagnosticHistory.length > 0} onGoToHistory={handleNavigateToHistory} />;
+        return <LandingScreen onStartDiagnosis={handleNavigateToPreDiagnosis} onEmergency={handleNavigateToEmergencyGuide} onStartPreventionPlan={handleNavigateToPreventionPlan} onDirectDiagnosisSubmit={handleDirectDiagnosisSubmit} onShowHowItWorks={handleNavigateToHowItWorks} onShowSettings={handleNavigateToSettings} hasJournalData={journalData.length > 0} onGoToJournal={handleGoToJournal} onGoToPillbox={handleGoToPillbox} onStartTraining={handleNavigateToTraining} hasHistory={diagnosticHistory.length > 0} onGoToHistory={handleNavigateToHistory} onDiscoverApp={handleNavigateToDiscoverApp} />;
       case AppState.HOW_IT_WORKS:
         return <HowItWorksScreen onBackToLanding={handleReset} />;
       case AppState.EMERGENCY_GUIDE:
@@ -1297,7 +1305,7 @@ const App: React.FC = () => {
       case AppState.ERROR:
         return <ErrorScreen message={error || "Une erreur inconnue est survenue."} onRetry={handleReset} />;
       default:
-        return <LandingScreen onStartDiagnosis={handleNavigateToPreDiagnosis} onEmergency={handleNavigateToEmergencyGuide} onStartPreventionPlan={handleNavigateToPreventionPlan} onDirectDiagnosisSubmit={handleDirectDiagnosisSubmit} onShowHowItWorks={handleNavigateToHowItWorks} onShowSettings={handleNavigateToSettings} hasJournalData={journalData.length > 0} onGoToJournal={handleGoToJournal} onGoToPillbox={handleGoToPillbox} onStartTraining={handleNavigateToTraining} hasHistory={diagnosticHistory.length > 0} onGoToHistory={handleNavigateToHistory} />;
+        return <LandingScreen onStartDiagnosis={handleNavigateToPreDiagnosis} onEmergency={handleNavigateToEmergencyGuide} onStartPreventionPlan={handleNavigateToPreventionPlan} onDirectDiagnosisSubmit={handleDirectDiagnosisSubmit} onShowHowItWorks={handleNavigateToHowItWorks} onShowSettings={handleNavigateToSettings} hasJournalData={journalData.length > 0} onGoToJournal={handleGoToJournal} onGoToPillbox={handleGoToPillbox} onStartTraining={handleNavigateToTraining} hasHistory={diagnosticHistory.length > 0} onGoToHistory={handleNavigateToHistory} onDiscoverApp={handleNavigateToDiscoverApp} />;
     }
   };
 

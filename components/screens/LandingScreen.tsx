@@ -1,8 +1,10 @@
 
 
 
+
+
 import React, { useState } from 'react';
-import { StethoscopeIcon, ClipboardDocumentCheckIcon, ShieldExclamationIcon, ShieldCheckIcon, BeakerIcon, InformationCircleIcon, BookOpenIcon, Cog6ToothIcon, PillIcon, AcademicCapIcon, NewspaperIcon } from '../icons';
+import { StethoscopeIcon, ClipboardDocumentCheckIcon, ShieldExclamationIcon, ShieldCheckIcon, BeakerIcon, InformationCircleIcon, BookOpenIcon, Cog6ToothIcon, PillIcon, AcademicCapIcon, NewspaperIcon, SparklesIcon } from '../icons';
 
 interface LandingScreenProps {
   onStartDiagnosis: () => void;
@@ -17,12 +19,13 @@ interface LandingScreenProps {
   onStartTraining: () => void;
   hasHistory: boolean;
   onGoToHistory: () => void;
+  onDiscoverApp: () => void;
 }
 
 const LandingScreen: React.FC<LandingScreenProps> = ({ 
     onStartDiagnosis, onEmergency, onStartPreventionPlan, onDirectDiagnosisSubmit, 
     onShowHowItWorks, onShowSettings, hasJournalData, onGoToJournal, onGoToPillbox, 
-    onStartTraining, hasHistory, onGoToHistory 
+    onStartTraining, hasHistory, onGoToHistory, onDiscoverApp
 }) => {
   const [directDiagnosis, setDirectDiagnosis] = useState('');
 
@@ -50,14 +53,21 @@ const LandingScreen: React.FC<LandingScreenProps> = ({
         <span className="text-red-400 text-sm font-semibold">Cet outil ne remplace pas un avis médical professionnel.</span>
       </p>
 
-      <div className="w-full mt-8">
-        <button 
-          onClick={onShowHowItWorks} 
-          className="w-full bg-slate-800/70 border border-slate-700 rounded-xl p-4 flex items-center justify-center gap-3 text-lg text-sky-300 hover:bg-slate-800 hover:border-sky-500 transition-all duration-300"
-        >
-          <InformationCircleIcon className="h-6 w-6" />
-          <span className="font-bold">Découvrir le fonctionnement de Med.AI</span>
-        </button>
+      <div className="w-full mt-8 grid grid-cols-1 md:grid-cols-2 gap-4">
+          <button 
+            onClick={onDiscoverApp} 
+            className="w-full bg-slate-800/70 border-2 border-sky-500 rounded-xl p-4 flex items-center justify-center gap-3 text-lg text-sky-300 hover:bg-sky-500/10 transition-all duration-300 font-bold"
+          >
+            <SparklesIcon className="h-6 w-6" />
+            Découvrir Med.AI
+          </button>
+           <button 
+            onClick={onShowHowItWorks} 
+            className="w-full bg-slate-800/70 border border-slate-700 rounded-xl p-4 flex items-center justify-center gap-3 text-base text-slate-400 hover:bg-slate-800 hover:border-slate-500 transition-all duration-300"
+          >
+            <InformationCircleIcon className="h-5 w-5" />
+            <span>Comment ça marche (Technique)</span>
+          </button>
       </div>
 
       <div className="w-full mt-6 space-y-6">

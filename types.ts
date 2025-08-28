@@ -2,6 +2,7 @@
 
 
 export enum AppState {
+  DISCOVER_APP,
   LANDING,
   HOW_IT_WORKS,
   EMERGENCY_GUIDE,
