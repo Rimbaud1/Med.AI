@@ -1,7 +1,7 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
 // FIX: Import CrosswordData type
-import type { Question, ReportData, Answer, PatientContext, PossibleIssue, SymptomIntensity, PreQuestionnaireAnswer, SymptomCharacteristics, AppointmentPrepData, ScenarioData, PreventionProfile, PreventionPlanData, NeuroTest, StabilityTestResult, CapillaryRefillTimeResult, SpeechDyspneaResult, MedicationSideEffectInfo, RiskAnalysis, TrackedSymptom, TrendAnalysis, TrainingScenario, CrosswordData } from '../types';
+import type { Question, ReportData, Answer, PatientContext, PossibleIssue, SymptomIntensity, PreQuestionnaireAnswer, SymptomCharacteristics, AppointmentPrepData, ScenarioData, PreventionProfile, PreventionPlanData, NeuroTest, StabilityTestResult, CapillaryRefillTimeResult, SpeechDyspneaResult, MedicationSideEffectInfo, RiskAnalysis, TrackedSymptom, TrendAnalysis, TrainingScenario, CrosswordData, SimulationScenario } from '../types';
 
 let _ai: GoogleGenAI | null = null;
 
@@ -1355,6 +1355,90 @@ export async function generateTrainingScenarios(topic: 'protect' | 'alert' | 're
     } catch (error) {
         console.error("Error generating training scenarios:", error);
         throw new Error("Impossible de générer les scénarios d'entraînement.");
+    }
+}
+
+export async function generateFullSimulationScenario(): Promise<SimulationScenario> {
+    const ai = getClient();
+    const model = 'gemini-2.5-flash';
+
+    const systemInstruction = `Tu es un concepteur de simulations de premiers secours expert. Ton objectif est de créer un scénario d'urgence COMPLET, COHÉRENT et INTERACTIF qui guide un utilisateur à travers les 3 étapes vitales : PROTÉGER, ALERTER, SECOURIR.
+
+    La structure de la réponse DOIT être un objet JSON unique.
+
+    1.  'title': Un titre court et percutant pour le scénario (ex: "Chute dans les escaliers", "Accident de barbecue").
+    2.  'description': Une mise en situation initiale claire et immersive. Décris la scène, la victime, et les éléments contextuels.
+    3.  'stages': Un objet contenant les 3 étapes.
+        *   Pour chaque étape ('protect', 'alert', 'rescue'):
+            *   'introText': Une phrase de transition qui introduit l'étape. Ex: "Vous arrivez sur les lieux. La première chose à faire est d'analyser les dangers."
+            *   'questions': Un tableau de 1 à 2 questions à choix multiples PERTINENTES pour cette étape et le contexte du scénario.
+                *   Chaque question doit avoir 3-4 'choices'.
+                *   Chaque 'choice' doit contenir 'text', 'isCorrect' (booléen), et un 'feedback' clair expliquant pourquoi la réponse est bonne ou mauvaise. Le feedback est crucial pour l'apprentissage.
+    4.  'finalDebrief': Un paragraphe de conclusion qui résume les leçons clés du scénario dans son ensemble.
+
+    Assure-toi que les questions s'enchaînent logiquement et que le scénario reste cohérent du début à la fin. Par exemple, l'état de la victime décrit dans la phase 'rescue' doit être une conséquence logique de la description initiale.`;
+
+    const questionSchema = {
+        type: Type.OBJECT,
+        properties: {
+            question: { type: Type.STRING },
+            choices: {
+                type: Type.ARRAY,
+                items: {
+                    type: Type.OBJECT,
+                    properties: {
+                        text: { type: Type.STRING },
+                        isCorrect: { type: Type.BOOLEAN },
+                        feedback: { type: Type.STRING }
+                    },
+                    required: ["text", "isCorrect", "feedback"]
+                }
+            }
+        },
+        required: ["question", "choices"]
+    };
+
+    const stageSchema = {
+        type: Type.OBJECT,
+        properties: {
+            introText: { type: Type.STRING },
+            questions: { type: Type.ARRAY, items: questionSchema }
+        },
+        required: ["introText", "questions"]
+    };
+
+    try {
+        const response = await ai.models.generateContent({
+            model,
+            contents: `Génère un scénario de simulation de premiers secours complet et unique.`,
+            config: {
+                systemInstruction,
+                responseMimeType: 'application/json',
+                responseSchema: {
+                    type: Type.OBJECT,
+                    properties: {
+                        title: { type: Type.STRING },
+                        description: { type: Type.STRING },
+                        stages: {
+                            type: Type.OBJECT,
+                            properties: {
+                                protect: stageSchema,
+                                alert: stageSchema,
+                                rescue: stageSchema
+                            },
+                            required: ["protect", "alert", "rescue"]
+                        },
+                        finalDebrief: { type: Type.STRING }
+                    },
+                    required: ["title", "description", "stages", "finalDebrief"]
+                }
+            }
+        });
+        const jsonString = response.text;
+        return JSON.parse(jsonString) as SimulationScenario;
+    } catch (error) {
+        console.error("Error generating full simulation scenario:", error);
+        throw new Error("Impossible de générer la simulation d'entraînement.");
     }
 }
 // FIX: Add missing function to generate crossword puzzles

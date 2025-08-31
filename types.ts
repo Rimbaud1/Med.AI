@@ -59,6 +59,7 @@ export enum AppState {
   TRAINING_PROTECT,
   TRAINING_ALERT,
   TRAINING_RESCUE,
+  TRAINING_SIMULATION,
   ERROR,
 }
 
@@ -272,6 +273,33 @@ export interface TrainingScenario {
     description: string;
     questions: ScenarioQuestion[];
     debrief: string;
+}
+
+export interface SimulationChoice {
+    text: string;
+    isCorrect: boolean;
+    feedback: string;
+}
+
+export interface SimulationQuestion {
+    question: string;
+    choices: SimulationChoice[];
+}
+
+export interface SimulationStage {
+    introText: string;
+    questions: SimulationQuestion[];
+}
+
+export interface SimulationScenario {
+  title: string;
+  description: string;
+  stages: {
+    protect: SimulationStage;
+    alert: SimulationStage;
+    rescue: SimulationStage;
+  };
+  finalDebrief: string;
 }
 
 

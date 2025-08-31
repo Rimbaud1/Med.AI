@@ -1,8 +1,8 @@
 
 import React, { useState, useCallback, useEffect } from 'react';
 import { AppState } from './types';
-import type { Question, Answer, ReportData, PatientContext, SymptomIntensity, PreQuestionnaireAnswer, SymptomCharacteristics, ChatMessage, AppointmentPrepData, EmpathyLevel, ScenarioData, PreventionProfile, PreventionPlanData, NeuroTest, StabilityTestResult, CapillaryRefillTimeResult, SpeechDyspneaResult, TrackedSymptom, SymptomLogEntry, UserSettings, UserProfileData, Medication, RiskAnalysis, TrendAnalysis, TrainingProgress, DiagnosticHistoryEntry } from './types';
-import { initializeAi, generateQuestions, generateReport, extractSymptoms, generateExclusionSymptoms, generateSelfExamPrompt, generateNeuroTests, shouldRequestCRT, shouldRequestRespiratoryRate, shouldRequestStabilityTest, shouldRequestSpeechDyspneaTest, generatePhotoPrompt, generateAppointmentPrepData, generateScenarios, generatePreventionPlan, generateDirectReport, shouldTriggerMemoryTest, generateMemoryTestWords, generateMedicationSideEffects, generateRiskAnalysis, analyzeSymptomTrends, generateTrainingScenarios } from './services/geminiService';
+import type { Question, Answer, ReportData, PatientContext, SymptomIntensity, PreQuestionnaireAnswer, SymptomCharacteristics, ChatMessage, AppointmentPrepData, EmpathyLevel, ScenarioData, PreventionProfile, PreventionPlanData, NeuroTest, StabilityTestResult, CapillaryRefillTimeResult, SpeechDyspneaResult, TrackedSymptom, SymptomLogEntry, UserSettings, UserProfileData, Medication, RiskAnalysis, TrendAnalysis, TrainingProgress, DiagnosticHistoryEntry, SimulationScenario } from './types';
+import { initializeAi, generateQuestions, generateReport, extractSymptoms, generateExclusionSymptoms, generateSelfExamPrompt, generateNeuroTests, shouldRequestCRT, shouldRequestRespiratoryRate, shouldRequestStabilityTest, shouldRequestSpeechDyspneaTest, generatePhotoPrompt, generateAppointmentPrepData, generateScenarios, generatePreventionPlan, generateDirectReport, shouldTriggerMemoryTest, generateMemoryTestWords, generateMedicationSideEffects, generateRiskAnalysis, analyzeSymptomTrends, generateTrainingScenarios, generateFullSimulationScenario } from './services/geminiService';
 import { GoogleGenAI } from "@google/genai";
 import type { Chat } from "@google/genai";
 
@@ -48,6 +48,7 @@ import TrainingScreen from './components/screens/TrainingScreen';
 import ProtectScreen from './components/screens/training/ProtectScreen';
 import AlertScreen from './components/screens/training/AlertScreen';
 import RescueScreen from './components/screens/training/RescueScreen';
+import SimulationScreen from './components/screens/training/SimulationScreen';
 import { NewspaperIcon, TrashIcon, ClockIcon, HeartIcon, SparklesIcon, InformationCircleIcon, WarningIcon } from './components/icons';
 import DiscoverScreen from './components/screens/DiscoverScreen';
 
@@ -291,6 +292,7 @@ const App: React.FC = () => {
 
   // Training state
   const [trainingProgress, setTrainingProgress] = useState<TrainingProgress>({ protect: false, alert: false, rescue: false });
+  const [simulationScenario, setSimulationScenario] = useState<SimulationScenario | null>(null);
 
   // History state
   const [diagnosticHistory, setDiagnosticHistory] = useState<DiagnosticHistoryEntry[]>([]);
@@ -372,6 +374,7 @@ const App: React.FC = () => {
     setSymptomsToTrackSetup([]);
     setTrendAnalysis(null);
     setActiveMedicationId(null);
+    setSimulationScenario(null);
     setIsLoadComplete(false);
     setOnLoadContinue(null);
     setNavigationSource(null);
@@ -684,6 +687,24 @@ const App: React.FC = () => {
   const handleNavigateToTrainingRescue = useCallback(() => {
     setAppState(AppState.TRAINING_RESCUE);
   }, []);
+  
+  const handleNavigateToTrainingSimulation = useCallback(async () => {
+    setAppState(AppState.GENERATING_SCENARIOS); // Re-use this loading state
+    setIsLoadComplete(false);
+    setOnLoadContinue(null);
+    try {
+        const scenario = await generateFullSimulationScenario();
+        setSimulationScenario(scenario);
+        setIsLoadComplete(true);
+        setOnLoadContinue(() => () => {
+            setAppState(AppState.TRAINING_SIMULATION);
+            setOnLoadContinue(null);
+        });
+    } catch (err) {
+        handleError(err instanceof Error ? err.message : "Erreur lors de la génération de la simulation.", handleNavigateToTrainingSimulation);
+    }
+}, [handleError]);
+
 
   const handleCompleteProtectSection = useCallback(() => {
     setTrainingProgress(prev => ({ ...prev, protect: true }));
@@ -751,6 +772,42 @@ const App: React.FC = () => {
     setOnLoadContinue(null);
     setPatientContext(context);
 
+    // --- BUG FIX: Save user profile data based on settings ---
+    const profileToSave: UserProfileData = {};
+    if (userSettings.saveProfileData.sexAndAge) {
+      profileToSave.sex = context.sex;
+      profileToSave.age = String(context.age);
+    }
+    if (userSettings.saveProfileData.weight && context.weight) {
+      profileToSave.weight = context.weight;
+    }
+    if (userSettings.saveProfileData.location && context.location) {
+      profileToSave.location = context.location;
+    }
+    if (userSettings.saveProfileData.existingConditions && context.existingConditions) {
+      profileToSave.existingConditions = context.existingConditions;
+    }
+    if (userSettings.saveProfileData.currentMedications && context.currentMedications) {
+      profileToSave.currentMedications = context.currentMedications;
+    }
+    if (userSettings.saveProfileData.allergies && context.allergies) {
+      profileToSave.allergies = context.allergies;
+    }
+    if (userSettings.saveProfileData.recentTravels && context.recentTravels) {
+      profileToSave.recentTravels = context.recentTravels;
+    }
+    
+    if (Object.values(userSettings.saveProfileData).some(v => v) && Object.keys(profileToSave).length > 0) {
+      const updatedProfile = { ...(userProfile || {}), ...profileToSave };
+      setUserProfile(updatedProfile);
+      try {
+        localStorage.setItem('medai-user-profile', JSON.stringify(updatedProfile));
+      } catch (error) {
+        console.error("Failed to save user profile to localStorage", error);
+      }
+    }
+    // --- END BUG FIX ---
+
     try {
         const [relevant, symptoms] = await Promise.all([
             shouldTriggerMemoryTest(initialSymptoms, context),
@@ -779,7 +836,7 @@ const App: React.FC = () => {
     } catch (err) {
       handleError(err instanceof Error ? err.message : "Erreur lors de l'analyse du contexte.", () => handleContextSubmit(context));
     }
-  }, [initialSymptoms, handleError]);
+  }, [initialSymptoms, handleError, userSettings.saveProfileData, userProfile]);
   
   const handleIntensitySubmit = useCallback((intensities: SymptomIntensity[], discomfort: string | null, mainSymptom: string) => {
     setSymptomIntensities(intensities);
@@ -1530,7 +1587,7 @@ const App: React.FC = () => {
       case AppState.MEDICAL_APPOINTMENT_PREP:
           return <MedicalAppointmentPrepScreen prepData={appointmentPrepData!} onBackToReport={handleBackToReport} onGoToSummary={handleGoToSummary} />;
       case AppState.GENERATING_SCENARIOS:
-          return <Loader text="Génération des scénarios d'évolution..." isComplete={isLoadComplete} onContinue={onLoadContinue!} />;
+          return <Loader text="Génération des scénarios..." isComplete={isLoadComplete} onContinue={onLoadContinue!} />;
       case AppState.SCENARIO_SIMULATOR:
           return <ScenarioSimulatorScreen scenarios={scenarioData!.scenarios} onBackToReport={handleBackToReport} />;
       case AppState.PREVENTION_PLAN_PROFILE:
@@ -1555,13 +1612,15 @@ const App: React.FC = () => {
           const activeMedication = pillboxData.find(m => m.id === activeMedicationId);
           return activeMedication ? <MedicationDetailScreen medication={activeMedication} onUpdateSideEffectNotes={handleUpdateSideEffectNotes} onBack={handleGoToPillbox} /> : <ErrorScreen message="Médicament non trouvé." onRetry={handleGoToPillbox} />;
       case AppState.TRAINING:
-          return <TrainingScreen onBackToLanding={handleReset} onNavigateToTrainingProtect={handleNavigateToTrainingProtect} onNavigateToTrainingAlert={handleNavigateToTrainingAlert} onNavigateToTrainingRescue={handleNavigateToTrainingRescue} trainingProgress={trainingProgress} />;
+          return <TrainingScreen onBackToLanding={handleReset} onNavigateToTrainingProtect={handleNavigateToTrainingProtect} onNavigateToTrainingAlert={handleNavigateToTrainingAlert} onNavigateToTrainingRescue={handleNavigateToTrainingRescue} trainingProgress={trainingProgress} onNavigateToTrainingSimulation={handleNavigateToTrainingSimulation} />;
       case AppState.TRAINING_PROTECT:
           return <ProtectScreen onComplete={handleCompleteProtectSection} onBack={() => setAppState(AppState.TRAINING)} />;
       case AppState.TRAINING_ALERT:
           return <AlertScreen onComplete={handleCompleteAlertSection} onBack={() => setAppState(AppState.TRAINING)} />;
       case AppState.TRAINING_RESCUE:
           return <RescueScreen onComplete={handleCompleteRescueSection} onBack={() => setAppState(AppState.TRAINING)} />;
+      case AppState.TRAINING_SIMULATION:
+          return <SimulationScreen scenario={simulationScenario!} onBack={() => setAppState(AppState.TRAINING)} />;
       case AppState.DIAGNOSTIC_HISTORY:
         return <DiagnosticHistoryScreen history={diagnosticHistory} onViewReport={handleViewHistoricReport} onDeleteReport={handleDeleteHistoricReport} onBack={() => setAppState(AppState.LANDING)} />;
       case AppState.ERROR:
