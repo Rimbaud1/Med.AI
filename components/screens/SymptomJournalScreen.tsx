@@ -1,220 +1,408 @@
 
+import React, { useState, useMemo, useRef, useCallback } from 'react';
+import type { DailyLog, SymptomTrackerConfig, SleepLog, MealLog, ActivityLog, MealType, ActivityIntensity, NutritionalInfo, ActivityAnalysis, TrendAnalysis } from '../../types';
+import { BookOpenIcon, MoonIcon, DropletIcon, DumbbellIcon, ForkKnifeIcon, CalendarDaysIcon, SparklesIcon, InformationCircleIcon, CameraIcon, TrashIcon, ClockIcon } from '../icons';
 
-import React, { useState, useMemo } from 'react';
-import type { TrackedSymptom, SymptomLogEntry, TrendAnalysis } from '../../types';
-import { BookOpenIcon, ChartBarIcon, SparklesIcon } from '../icons';
+const fileToBase64 = (file: File): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => {
+      const result = reader.result as string;
+      resolve(result.split(',')[1]); // Remove the data:image/...;base64, part
+    };
+    reader.onerror = (error) => reject(error);
+  });
+};
 
-interface SymptomJournalScreenProps {
-  journalData: TrackedSymptom[];
-  onAddEntry: (symptomName: string, entry: Omit<SymptomLogEntry, 'date'>) => void;
+// Helper to format date to YYYY-MM-DD
+const toYYYYMMDD = (date: Date) => date.toISOString().split('T')[0];
+
+interface HealthHubScreenProps {
+  healthData: DailyLog[];
+  symptomConfig: SymptomTrackerConfig[];
+  onUpdateLog: (date: string, updatedLog: Partial<DailyLog>) => void;
+  onAddMeal: (date: string, meal: Omit<MealLog, 'id' | 'nutritionalInfo'>) => Promise<NutritionalInfo | null>;
+  onAddActivity: (date: string, activity: Omit<ActivityLog, 'id' | 'analysis'>) => Promise<ActivityAnalysis | null>;
   onBack: () => void;
   onAnalyzeTrends: () => void;
   trendAnalysis: TrendAnalysis | null;
   onClearTrendAnalysis: () => void;
+  hydrationGoal: number;
+  accessLevel: 'free' | 'own_key' | 'premium';
 }
 
-const SymptomChart: React.FC<{ logs: SymptomLogEntry[] }> = ({ logs }) => {
-    const data = useMemo(() => {
-        // Get last 30 days of data
-        const thirtyDaysAgo = new Date();
-        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-        return logs
-            .filter(log => new Date(log.date) >= thirtyDaysAgo)
-            .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-    }, [logs]);
+type ModalType = null | 'sleep' | 'meal' | 'activity';
 
-    if (data.length < 2) {
-        return <div className="h-48 flex items-center justify-center text-slate-500">Données insuffisantes pour afficher un graphique.</div>;
-    }
+const HealthHubScreen: React.FC<HealthHubScreenProps> = (props) => {
+    const { healthData, symptomConfig, onUpdateLog, onAddMeal, onAddActivity, onBack, onAnalyzeTrends, trendAnalysis, onClearTrendAnalysis, hydrationGoal, accessLevel } = props;
+    const [currentDate, setCurrentDate] = useState(new Date());
+    const [activeModal, setActiveModal] = useState<ModalType>(null);
 
-    const width = 300;
-    const height = 150;
-    const padding = 20;
+    const dateString = toYYYYMMDD(currentDate);
 
-    const points = data.map((log, i) => {
-        const x = padding + (i / (data.length - 1)) * (width - 2 * padding);
-        const y = height - padding - ((log.intensity - 1) / 9) * (height - 2 * padding);
-        return { x, y, ...log };
-    });
+    const dailyLog = useMemo(() => {
+        const log = healthData.find(d => d.date === dateString);
+        if (log) return log;
+        // FIX: Add optional 'sleep' and 'generalNotes' properties to the fallback object to match the DailyLog type.
+        return {
+            date: dateString,
+            sleep: undefined,
+            hydrationMilliliters: 0,
+            meals: [],
+            activities: [],
+            symptoms: symptomConfig.map(s => ({ name: s.name, intensity: 0 })),
+            generalNotes: undefined,
+        };
+    }, [dateString, healthData, symptomConfig]);
 
-    const pathD = points.map((p, i) => (i === 0 ? 'M' : 'L') + `${p.x} ${p.y}`).join(' ');
-
-    return (
-        <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-auto" aria-label="Graphique de l'évolution des symptômes">
-            {/* Grid lines */}
-            {[1, 5, 10].map(val => (
-                <g key={val}>
-                    <line x1={padding} x2={width - padding} y1={height - padding - ((val - 1) / 9) * (height - 2 * padding)} y2={height - padding - ((val - 1) / 9) * (height - 2 * padding)} stroke="#334155" strokeWidth="0.5" />
-                    <text x={padding - 5} y={height - padding - ((val - 1) / 9) * (height - 2 * padding)} fill="#64748b" fontSize="8" textAnchor="end" alignmentBaseline="middle">{val}</text>
-                </g>
-            ))}
-            
-            {/* Line */}
-            <path d={pathD} fill="none" stroke="#38bdf8" strokeWidth="2" />
-
-            {/* Points and Tooltips */}
-            {points.map((p, i) => (
-                <g key={i} className="group">
-                    <circle cx={p.x} cy={p.y} r="3" fill="#38bdf8" stroke="#0f172a" strokeWidth="1" />
-                    <rect x={p.x - 20} y={p.y - 30} width="40" height="20" rx="3" fill="#1e293b" className="opacity-0 group-hover:opacity-100 transition-opacity" />
-                    <text x={p.x} y={p.y - 20} textAnchor="middle" fill="#f1f5f9" fontSize="8" className="opacity-0 group-hover:opacity-100 transition-opacity">{p.intensity}/10</text>
-                </g>
-            ))}
-        </svg>
+    const changeDay = (offset: number) => {
+        setCurrentDate(prev => {
+            const newDate = new Date(prev);
+            newDate.setDate(newDate.getDate() + offset);
+            return newDate;
+        });
+    };
+    
+    // --- Render Methods for Cards ---
+    const renderSleepCard = () => (
+        <div className="bg-slate-800 p-4 rounded-lg flex flex-col justify-between">
+            <div className="flex items-center gap-3 mb-3">
+                <MoonIcon className="h-6 w-6 text-indigo-400" />
+                <h3 className="text-lg font-semibold">Sommeil</h3>
+            </div>
+            {dailyLog.sleep ? (
+                <div className="text-center">
+                    <p className="text-3xl font-bold">{dailyLog.sleep.durationHours?.toFixed(1) ?? 'N/A'}h</p>
+                    <p className="text-sm text-slate-400">{dailyLog.sleep.startTime} - {dailyLog.sleep.endTime}</p>
+                    <p className="text-xs text-slate-500">{dailyLog.sleep.awakenings} réveil(s)</p>
+                </div>
+            ) : (
+                <p className="text-slate-400 text-center flex-grow flex items-center justify-center">Aucune donnée</p>
+            )}
+            <button onClick={() => setActiveModal('sleep')} className="mt-3 w-full bg-slate-700 hover:bg-indigo-600 text-sm font-semibold py-2 px-3 rounded-md transition-colors">
+                {dailyLog.sleep ? 'Modifier' : 'Ajouter'}
+            </button>
+        </div>
     );
-};
-
-
-const SymptomJournalScreen: React.FC<SymptomJournalScreenProps> = ({ journalData, onAddEntry, onBack, onAnalyzeTrends, trendAnalysis, onClearTrendAnalysis }) => {
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [selectedSymptom, setSelectedSymptom] = useState('');
-    const [intensity, setIntensity] = useState(5);
-    const [notes, setNotes] = useState('');
-
-    const canAnalyze = useMemo(() => {
-        return journalData.some(symptom => symptom.logs.length >= 3);
-    }, [journalData]);
-
-    const openModal = (symptomName?: string) => {
-        const today = new Date().toISOString().split('T')[0];
-        const symptomToEdit = journalData.find(s => s.name === (symptomName || selectedSymptom));
-        const todayLog = symptomToEdit?.logs.find(l => l.date === today);
-
-        setSelectedSymptom(symptomName || journalData[0]?.name || '');
-        setIntensity(todayLog?.intensity || 5);
-        setNotes(todayLog?.notes || '');
-        setIsModalOpen(true);
+    
+    const renderHydrationCard = () => {
+        const progress = Math.min((dailyLog.hydrationMilliliters / hydrationGoal) * 100, 100);
+        return (
+            <div className="bg-slate-800 p-4 rounded-lg flex flex-col justify-between">
+                <div className="flex items-center gap-3 mb-3">
+                    <DropletIcon className="h-6 w-6 text-sky-400" />
+                    <h3 className="text-lg font-semibold">Hydratation</h3>
+                </div>
+                <div className="text-center my-2">
+                    <div className="relative w-24 h-24 mx-auto">
+                        <svg className="w-full h-full" viewBox="0 0 36 36">
+                            <path className="text-slate-700" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" strokeWidth="3" />
+                            <path className="text-sky-400" strokeDasharray={`${progress}, 100`} d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" style={{ transition: 'stroke-dasharray 0.5s ease' }} />
+                        </svg>
+                        <div className="absolute inset-0 flex flex-col items-center justify-center">
+                            <p className="text-2xl font-bold">{dailyLog.hydrationMilliliters}</p>
+                            <p className="text-xs text-slate-400">/ {hydrationGoal}ml</p>
+                        </div>
+                    </div>
+                </div>
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                    <button onClick={() => onUpdateLog(dateString, { hydrationMilliliters: dailyLog.hydrationMilliliters + 250 })} className="bg-slate-700 hover:bg-sky-600 font-semibold py-2 rounded-md transition-colors">+250ml</button>
+                    <button onClick={() => onUpdateLog(dateString, { hydrationMilliliters: dailyLog.hydrationMilliliters + 500 })} className="bg-slate-700 hover:bg-sky-600 font-semibold py-2 rounded-md transition-colors">+500ml</button>
+                </div>
+            </div>
+        );
     };
 
-    const handleSave = () => {
-        if (selectedSymptom) {
-            onAddEntry(selectedSymptom, { intensity, notes });
-            setIsModalOpen(false);
-        }
+    const renderMealsCard = () => {
+        // FIX: Explicitly type the accumulator in the reduce function to ensure correct type inference.
+        const totalNutrition = dailyLog.meals.reduce((acc: NutritionalInfo, meal: MealLog) => {
+            acc.calories += meal.nutritionalInfo?.calories || 0;
+            acc.proteins += meal.nutritionalInfo?.proteins || 0;
+            acc.carbs += meal.nutritionalInfo?.carbs || 0;
+            acc.fats += meal.nutritionalInfo?.fats || 0;
+            return acc;
+        }, { calories: 0, proteins: 0, carbs: 0, fats: 0 });
+
+        return (
+            <div className="bg-slate-800 p-4 rounded-lg md:col-span-2 flex flex-col">
+                <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-3">
+                        <ForkKnifeIcon className="h-6 w-6 text-amber-400" />
+                        <h3 className="text-lg font-semibold">Repas</h3>
+                    </div>
+                     <button onClick={() => setActiveModal('meal')} className="bg-slate-700 hover:bg-amber-600 text-sm font-semibold py-1 px-3 rounded-md transition-colors">+ Ajouter</button>
+                </div>
+                <div className="flex-grow grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-2 text-sm">
+                         {dailyLog.meals.length > 0 ? dailyLog.meals.map(meal => (
+                            <div key={meal.id} className="bg-slate-900/50 p-2 rounded-md">
+                                <p className="font-semibold text-slate-300">{meal.type}</p>
+                                <p className="text-slate-400 truncate">{meal.description}</p>
+                            </div>
+                         )) : <p className="text-slate-500 h-full flex items-center justify-center">Aucun repas enregistré.</p>}
+                    </div>
+                    <div className="bg-slate-900/50 p-3 rounded-md text-center flex flex-col justify-center">
+                        <p className="text-3xl font-bold">{totalNutrition.calories}<span className="text-base font-normal text-slate-400"> kcal</span></p>
+                        <div className="grid grid-cols-3 gap-1 text-xs mt-2">
+                            <div><p className="font-bold text-blue-300">{totalNutrition.proteins}g</p><p className="text-slate-400">Prot.</p></div>
+                            <div><p className="font-bold text-green-300">{totalNutrition.carbs}g</p><p className="text-slate-400">Gluc.</p></div>
+                            <div><p className="font-bold text-red-300">{totalNutrition.fats}g</p><p className="text-slate-400">Lip.</p></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
     };
+
+    const renderActivitiesCard = () => {
+         // FIX: Add explicit types to the reduce function's parameters to ensure correct type inference for the accumulator.
+         const totalCalories = dailyLog.activities.reduce((acc: number, act: ActivityLog) => acc + (act.analysis?.caloriesBurned || 0), 0);
+        return (
+            <div className="bg-slate-800 p-4 rounded-lg md:col-span-2 flex flex-col">
+                 <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-3">
+                        <DumbbellIcon className="h-6 w-6 text-rose-400" />
+                        <h3 className="text-lg font-semibold">Activités Physiques</h3>
+                    </div>
+                     <button onClick={() => setActiveModal('activity')} className="bg-slate-700 hover:bg-rose-600 text-sm font-semibold py-1 px-3 rounded-md transition-colors">+ Ajouter</button>
+                </div>
+                <div className="flex-grow grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-2 text-sm overflow-y-auto max-h-32">
+                        {dailyLog.activities.length > 0 ? dailyLog.activities.map(act => (
+                            <div key={act.id} className="bg-slate-900/50 p-2 rounded-md">
+                                <p className="font-semibold text-slate-300">{act.name}</p>
+                                <p className="text-slate-400">{act.durationMinutes ? `${act.durationMinutes} min` : `${act.reps} reps`} - {act.intensity}</p>
+                            </div>
+                        )) : <p className="text-slate-500 h-full flex items-center justify-center">Aucune activité enregistrée.</p>}
+                    </div>
+                     <div className="bg-slate-900/50 p-3 rounded-md text-center flex flex-col justify-center">
+                         <p className="text-3xl font-bold">{totalCalories}<span className="text-base font-normal text-slate-400"> kcal</span></p>
+                         <p className="text-xs text-slate-400 mt-1">Calories brûlées (est.)</p>
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
+    const renderSymptomsCard = () => (
+         <div className="bg-slate-800 p-4 rounded-lg md:col-span-2">
+            <h3 className="text-lg font-semibold mb-3">Symptômes</h3>
+             <div className="space-y-3">
+                {dailyLog.symptoms.length > 0 ? dailyLog.symptoms.map(symptom => (
+                    <div key={symptom.name}>
+                        <label className="text-slate-300 flex justify-between"><span>{symptom.name}</span> <span className="font-bold text-sky-300">{symptom.intensity}</span></label>
+                        <input type="range" min="0" max="10" value={symptom.intensity} onChange={e => {
+                            const newSymptoms = [...dailyLog.symptoms];
+                            const index = newSymptoms.findIndex(s => s.name === symptom.name);
+                            newSymptoms[index].intensity = parseInt(e.target.value, 10);
+                            onUpdateLog(dateString, { symptoms: newSymptoms });
+                        }} className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-sky-500" />
+                    </div>
+                )) : <p className="text-slate-500 text-center py-4">Aucun symptôme configuré.</p>}
+            </div>
+        </div>
+    );
 
     return (
-        <div className="w-full max-w-5xl mx-auto p-4 md:p-8">
+      <div className="w-full max-w-5xl mx-auto p-4 md:p-8">
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-8">
                 <div className="flex items-center gap-4">
                     <div className="bg-purple-500/10 p-4 rounded-full border border-purple-500/30">
                         <BookOpenIcon className="h-10 w-10 text-purple-400" />
                     </div>
                     <div>
-                        <h1 className="text-3xl md:text-4xl font-bold text-slate-100">Mon Journal de Santé</h1>
-                        <p className="mt-1 text-slate-400">Suivez l'évolution de vos symptômes au quotidien.</p>
+                        <h1 className="text-3xl md:text-4xl font-bold text-slate-100">Mon Hub de Santé</h1>
+                        <p className="mt-1 text-slate-400">Votre tableau de bord bien-être quotidien.</p>
                     </div>
                 </div>
-                <div className="flex gap-2">
-                    <button onClick={onBack} className="bg-slate-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-slate-500 transition-colors">Retour</button>
-                    <button onClick={() => openModal()} disabled={journalData.length === 0} className="bg-sky-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-sky-500 transition-colors disabled:bg-slate-700 disabled:cursor-not-allowed">
-                        + Ajouter une entrée
-                    </button>
+                <button onClick={onBack} className="bg-slate-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-slate-500 transition-colors">Retour</button>
+            </div>
+
+            {/* Date Navigator */}
+            <div className="flex items-center justify-between p-4 bg-slate-800 rounded-lg mb-6 border border-slate-700">
+                <button onClick={() => changeDay(-1)} className="p-2 rounded-full hover:bg-slate-700 transition-colors">&lt;</button>
+                <h2 className="text-xl font-bold text-center">{currentDate.toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</h2>
+                <button onClick={() => changeDay(1)} disabled={toYYYYMMDD(currentDate) === toYYYYMMDD(new Date())} className="p-2 rounded-full hover:bg-slate-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">&gt;</button>
+            </div>
+
+            {/* Dashboard Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                {renderSleepCard()}
+                {renderHydrationCard()}
+                {renderMealsCard()}
+                {renderActivitiesCard()}
+                {renderSymptomsCard()}
+                 <div className="bg-slate-800 p-4 rounded-lg flex flex-col justify-between md:col-span-2">
+                    <div className="flex items-center gap-3 mb-3">
+                        <SparklesIcon className="h-6 w-6 text-teal-400" />
+                        <h3 className="text-lg font-semibold">Analyse IA</h3>
+                    </div>
+                    <div className="flex-grow flex items-center justify-center">
+                        <button onClick={onAnalyzeTrends} className="bg-teal-600 hover:bg-teal-500 text-white font-bold py-3 px-5 rounded-lg transition-colors">
+                            Analyser les Tendances
+                        </button>
+                    </div>
                 </div>
             </div>
 
-            <div className="mb-6 p-4 rounded-lg bg-indigo-900/40 border border-indigo-700 flex flex-col sm:flex-row items-center justify-between gap-4">
-                <div className='flex items-center gap-3'>
-                    <SparklesIcon className="h-8 w-8 text-indigo-400 flex-shrink-0" />
-                    <div>
-                         <h3 className="font-bold text-slate-100">Détection de Tendances Anormales</h3>
-                         <p className="text-sm text-indigo-200">Laissez l'IA analyser vos données pour y déceler des évolutions ou corrélations importantes.</p>
-                    </div>
-                </div>
-                <button
-                    onClick={onAnalyzeTrends}
-                    disabled={!canAnalyze}
-                    className="w-full sm:w-auto flex-shrink-0 bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-indigo-500 transition-colors disabled:bg-slate-700 disabled:text-slate-400 disabled:cursor-not-allowed"
-                    title={!canAnalyze ? "Ajoutez au moins 3 entrées pour un symptôme pour activer l'analyse." : ""}
-                >
-                    Analyser mes tendances
-                </button>
-            </div>
+             {/* Modals */}
+            {activeModal === 'sleep' && <SleepModal log={dailyLog.sleep} onClose={() => setActiveModal(null)} onSave={sleepLog => { onUpdateLog(dateString, { sleep: sleepLog }); setActiveModal(null); }} />}
+            {activeModal === 'meal' && <MealModal onClose={() => setActiveModal(null)} onSave={meal => onAddMeal(dateString, meal)} accessLevel={accessLevel} />}
+            {activeModal === 'activity' && <ActivityModal onClose={() => setActiveModal(null)} onSave={activity => onAddActivity(dateString, activity)} />}
 
-            {journalData.length === 0 ? (
-                <div className="text-center py-20 bg-slate-800/50 rounded-lg border border-slate-700">
-                    <ChartBarIcon className="h-16 w-16 mx-auto text-slate-500 mb-4" />
-                    <h2 className="text-xl font-semibold text-slate-300">Votre journal est vide</h2>
-                    <p className="text-slate-400 mt-2">Commencez un diagnostic pour pouvoir suivre vos symptômes.</p>
-                </div>
-            ) : (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    {journalData.map(symptom => (
-                        <div key={symptom.name} className="bg-slate-800/50 p-5 rounded-lg border border-slate-700">
-                            <div className="flex justify-between items-center mb-4">
-                                <h3 className="text-xl font-semibold text-slate-100">{symptom.name}</h3>
-                                <button onClick={() => openModal(symptom.name)} className="text-sm bg-slate-700 hover:bg-slate-600 text-slate-200 font-semibold py-1 px-3 rounded-md transition-colors">
-                                    Mettre à jour
-                                </button>
-                            </div>
-                            <SymptomChart logs={symptom.logs} />
+            {/* Trend Analysis Modal */}
+            {trendAnalysis && (
+                 <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={onClearTrendAnalysis}>
+                    <div className="bg-slate-800 rounded-xl border border-slate-700 shadow-2xl w-full max-w-lg p-6 relative animate-in zoom-in-95" onClick={e => e.stopPropagation()}>
+                        <div className="flex items-center gap-3 mb-4">
+                            <SparklesIcon className="h-7 w-7 text-teal-400" />
+                            <h3 className="text-xl font-bold text-slate-100">Analyse des Tendances</h3>
                         </div>
-                    ))}
-                </div>
-            )}
-
-            {isModalOpen && (
-                <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-300">
-                    <div className="bg-slate-800 rounded-xl border border-slate-700 shadow-2xl w-full max-w-lg p-6 relative animate-in zoom-in-95 duration-300">
-                        <h3 className="text-xl font-bold text-slate-100 mb-4">Entrée du jour ({new Date().toLocaleDateString()})</h3>
-                        <div className="space-y-4">
+                        <div className="bg-slate-900/50 p-4 rounded-lg border border-slate-700 space-y-4">
                             <div>
-                                <label htmlFor="symptom-select" className="block text-sm font-medium text-slate-300 mb-1">Symptôme</label>
-                                <select id="symptom-select" value={selectedSymptom} onChange={e => setSelectedSymptom(e.target.value)} className="w-full p-2 rounded-md bg-slate-700 border border-slate-600 text-white">
-                                    {journalData.map(s => <option key={s.name} value={s.name}>{s.name}</option>)}
-                                </select>
-                            </div>
-                            <div>
-                                <label htmlFor="intensity-slider" className="block text-sm font-medium text-slate-300 mb-1 flex justify-between">Intensité <span className="font-bold text-sky-400">{intensity}/10</span></label>
-                                <input id="intensity-slider" type="range" min="1" max="10" value={intensity} onChange={e => setIntensity(parseInt(e.target.value))} className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-sky-500" />
-                            </div>
-                            <div>
-                                <label htmlFor="notes" className="block text-sm font-medium text-slate-300 mb-1">Notes (optionnel)</label>
-                                <textarea id="notes" value={notes} onChange={e => setNotes(e.target.value)} rows={3} className="w-full p-2 rounded-md bg-slate-700 border border-slate-600 text-white" placeholder="Ex: S'est aggravé après le repas..."></textarea>
-                            </div>
-                        </div>
-                        <div className="mt-6 flex justify-end gap-3">
-                            <button onClick={() => setIsModalOpen(false)} className="bg-slate-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-slate-500">Annuler</button>
-                            <button onClick={handleSave} className="bg-sky-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-sky-500">Enregistrer</button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-             {trendAnalysis && (
-                <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-300">
-                    <div className="bg-slate-800 rounded-xl border border-slate-700 shadow-2xl w-full max-w-2xl p-6 relative animate-in zoom-in-95 duration-300 max-h-[90vh] flex flex-col">
-                         <div className="flex items-center gap-3 mb-4 flex-shrink-0">
-                            <SparklesIcon className="h-7 w-7 text-indigo-400" />
-                            <h3 className="text-xl font-bold text-slate-100">Résultats de l'Analyse des Tendances</h3>
-                        </div>
-                        <div className="flex-grow overflow-y-auto pr-2 space-y-4">
-                            <div className="p-4 rounded-lg bg-slate-900/50 border border-slate-700">
-                                <h4 className="font-semibold text-slate-200 mb-1">Résumé de l'IA :</h4>
+                                <h4 className="font-semibold text-slate-200">Résumé</h4>
                                 <p className="text-slate-300 italic">"{trendAnalysis.summary}"</p>
                             </div>
-                             {trendAnalysis.findings.length > 0 && (
+                            {trendAnalysis.findings.length > 0 && (
                                 <div>
-                                    <h4 className="font-semibold text-slate-200 mb-2">Découvertes Clés :</h4>
-                                    <div className="space-y-3">
-                                        {trendAnalysis.findings.map((item, index) => (
-                                            <div key={index} className="p-3 rounded-lg bg-indigo-900/40 border border-indigo-700/80">
-                                                <p className="font-semibold text-indigo-200">{item.finding}</p>
-                                                <p className="text-sm text-indigo-300 mt-1">{item.explanation}</p>
-                                            </div>
-                                        ))}
-                                    </div>
+                                    <h4 className="font-semibold text-slate-200 mt-4">Découvertes Clés</h4>
+                                    <ul className="space-y-3 mt-2">
+                                    {trendAnalysis.findings.map((f, i) => (
+                                        <li key={i} className="border-t border-slate-700 pt-3">
+                                            <p className="text-sky-300 font-medium">{f.finding}</p>
+                                            <p className="text-sm text-slate-400">{f.explanation}</p>
+                                        </li>
+                                    ))}
+                                    </ul>
                                 </div>
-                             )}
+                            )}
                         </div>
-                        <div className="mt-6 flex justify-end flex-shrink-0">
-                            <button onClick={onClearTrendAnalysis} className="bg-sky-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-sky-500">Compris</button>
-                        </div>
+                        <button onClick={onClearTrendAnalysis} className="w-full mt-6 bg-slate-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-slate-500">Fermer</button>
                     </div>
                 </div>
             )}
+      </div>
+    );
+};
+
+// --- MODAL COMPONENTS ---
+
+// Sleep Modal
+const SleepModal: React.FC<{ log?: SleepLog | null; onClose: () => void; onSave: (log: SleepLog) => void; }> = ({ log, onClose, onSave }) => {
+    const [startTime, setStartTime] = useState(log?.startTime || '22:30');
+    const [endTime, setEndTime] = useState(log?.endTime || '06:30');
+    const [awakenings, setAwakenings] = useState(log?.awakenings?.toString() || '0');
+
+    const handleSave = () => {
+        const start = new Date(`1970-01-01T${startTime}:00`);
+        let end = new Date(`1970-01-01T${endTime}:00`);
+        if (end <= start) {
+            end.setDate(end.getDate() + 1); // Handle overnight sleep
+        }
+        const durationMs = end.getTime() - start.getTime();
+        const durationHours = durationMs / (1000 * 60 * 60);
+
+        onSave({ startTime, endTime, awakenings: parseInt(awakenings, 10), durationHours });
+    };
+
+    return (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={onClose}>
+            <div className="bg-slate-800 rounded-xl border border-slate-700 w-full max-w-md p-6" onClick={e => e.stopPropagation()}>
+                <h3 className="text-xl font-bold mb-4">Enregistrer le Sommeil</h3>
+                <div className="space-y-4">
+                    <div><label className="block text-sm mb-1">Heure de coucher</label><input type="time" value={startTime} onChange={e => setStartTime(e.target.value)} className="w-full p-2 rounded bg-slate-700" /></div>
+                    <div><label className="block text-sm mb-1">Heure de lever</label><input type="time" value={endTime} onChange={e => setEndTime(e.target.value)} className="w-full p-2 rounded bg-slate-700" /></div>
+                    <div><label className="block text-sm mb-1">Nombre de réveils</label><input type="number" min="0" value={awakenings} onChange={e => setAwakenings(e.target.value)} className="w-full p-2 rounded bg-slate-700" /></div>
+                </div>
+                <div className="flex gap-2 mt-6"><button onClick={onClose} className="w-full p-2 rounded bg-slate-600 hover:bg-slate-500">Annuler</button><button onClick={handleSave} className="w-full p-2 rounded bg-sky-600 hover:bg-sky-500">Enregistrer</button></div>
+            </div>
         </div>
     );
 };
 
-export default SymptomJournalScreen;
+// Meal Modal
+const MealModal: React.FC<{ onClose: () => void; onSave: (meal: Omit<MealLog, 'id' | 'nutritionalInfo'>) => void; accessLevel: 'free' | 'own_key' | 'premium'; }> = ({ onClose, onSave, accessLevel }) => {
+    const [type, setType] = useState<MealType>('Déjeuner');
+    const [description, setDescription] = useState('');
+    const [photoBase64, setPhotoBase64] = useState<string | null>(null);
+    const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+    const [error, setError] = useState('');
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
+    const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+        if (file.size > 4 * 1024 * 1024) { setError("L'image est trop lourde (max 4MB)."); return; }
+        setError('');
+        setPhotoPreview(URL.createObjectURL(file));
+        const b64 = await fileToBase64(file);
+        setPhotoBase64(b64);
+    };
+
+    const handleSave = () => {
+        if (!description.trim()) { setError("La description est requise."); return; }
+        onSave({ type, description, photoBase64: photoBase64 || undefined });
+        onClose();
+    };
+
+    return (
+       <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={onClose}>
+            <div className="bg-slate-800 rounded-xl border border-slate-700 w-full max-w-md p-6" onClick={e => e.stopPropagation()}>
+                <h3 className="text-xl font-bold mb-4">Ajouter un Repas</h3>
+                {error && <p className="text-red-400 text-sm mb-2">{error}</p>}
+                <div className="space-y-4">
+                    <div><label className="block text-sm mb-1">Type de repas</label><select value={type} onChange={e => setType(e.target.value as MealType)} className="w-full p-2 rounded bg-slate-700"><option>Petit-déjeuner</option><option>Déjeuner</option><option>Dîner</option><option>Collation</option></select></div>
+                    <div><label className="block text-sm mb-1">Description</label><textarea value={description} onChange={e => setDescription(e.target.value)} rows={3} className="w-full p-2 rounded bg-slate-700" placeholder="Ex: Salade de poulet, riz complet..."></textarea></div>
+                    <div>
+                        <label className="block text-sm mb-1">Photo (Optionnel)</label>
+                        {accessLevel === 'free' ? 
+                            <div className="text-xs p-2 bg-slate-900 rounded border border-slate-700 text-amber-300">Fonctionnalité Premium. Mettez à jour votre mode d'accès dans les paramètres.</div>
+                             :
+                            <div className="flex items-center gap-2">
+                                <button onClick={() => fileInputRef.current?.click()} className="flex-grow p-2 rounded bg-slate-700 hover:bg-slate-600 flex items-center justify-center gap-2"><CameraIcon className="h-5 w-5"/> Charger une photo</button>
+                                {photoPreview && <img src={photoPreview} alt="aperçu" className="h-10 w-10 rounded object-cover" />}
+                                <input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={handleFileChange} />
+                            </div>
+                        }
+                    </div>
+                </div>
+                <div className="flex gap-2 mt-6"><button onClick={onClose} className="w-full p-2 rounded bg-slate-600 hover:bg-slate-500">Annuler</button><button onClick={handleSave} className="w-full p-2 rounded bg-sky-600 hover:bg-sky-500">Enregistrer</button></div>
+            </div>
+       </div>
+    );
+};
+
+// Activity Modal
+const ActivityModal: React.FC<{ onClose: () => void; onSave: (activity: Omit<ActivityLog, 'id' | 'analysis'>) => void; }> = ({ onClose, onSave }) => {
+    const [name, setName] = useState('');
+    const [duration, setDuration] = useState('');
+    const [reps, setReps] = useState('');
+    const [intensity, setIntensity] = useState<ActivityIntensity>('Modérée');
+
+    const handleSave = () => {
+        if (!name.trim() || (!duration.trim() && !reps.trim())) return;
+        onSave({ name, intensity, durationMinutes: duration ? parseInt(duration, 10) : undefined, reps: reps ? parseInt(reps, 10) : undefined });
+        onClose();
+    };
+
+    return (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={onClose}>
+            <div className="bg-slate-800 rounded-xl border border-slate-700 w-full max-w-md p-6" onClick={e => e.stopPropagation()}>
+                <h3 className="text-xl font-bold mb-4">Ajouter une Activité</h3>
+                <div className="space-y-4">
+                    <div><label className="block text-sm mb-1">Nom de l'activité</label><input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="Ex: Course à pied" className="w-full p-2 rounded bg-slate-700" /></div>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div><label className="block text-sm mb-1">Durée (min)</label><input type="number" value={duration} onChange={e => setDuration(e.target.value)} placeholder="30" className="w-full p-2 rounded bg-slate-700" /></div>
+                        <div><label className="block text-sm mb-1">Répétitions</label><input type="number" value={reps} onChange={e => setReps(e.target.value)} placeholder="12" className="w-full p-2 rounded bg-slate-700" /></div>
+                    </div>
+                     <div><label className="block text-sm mb-1">Intensité</label><select value={intensity} onChange={e => setIntensity(e.target.value as ActivityIntensity)} className="w-full p-2 rounded bg-slate-700"><option>Faible</option><option>Modérée</option><option>Élevée</option></select></div>
+                </div>
+                <div className="flex gap-2 mt-6"><button onClick={onClose} className="w-full p-2 rounded bg-slate-600 hover:bg-slate-500">Annuler</button><button onClick={handleSave} className="w-full p-2 rounded bg-sky-600 hover:bg-sky-500">Enregistrer</button></div>
+            </div>
+        </div>
+    );
+};
+
+
+export default HealthHubScreen;

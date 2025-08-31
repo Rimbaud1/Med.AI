@@ -38,9 +38,9 @@ const SymptomJournalSetupScreen: React.FC<SymptomJournalSetupScreenProps> = ({ s
       <div className="bg-purple-500/10 p-4 rounded-full mb-6 border border-purple-500/30">
         <ChartBarIcon className="h-10 w-10 text-purple-400" />
       </div>
-      <h1 className="text-3xl md:text-4xl font-bold text-center text-slate-100">Configurer le Suivi des Symptômes</h1>
+      <h1 className="text-3xl md:text-4xl font-bold text-center text-slate-100">Configurer le Suivi Quotidien</h1>
       <p className="mt-4 text-center text-slate-400 max-w-lg">
-        Sélectionnez les symptômes que vous souhaitez suivre au quotidien. Nous avons pré-sélectionné ceux que vous avez signalés.
+        Sélectionnez les symptômes à inclure dans votre tableau de bord quotidien. Nous avons pré-sélectionné ceux que vous avez signalés.
       </p>
 
       <div className="w-full mt-8 bg-slate-800 rounded-lg p-6 md:p-8 shadow-lg border border-slate-700">
@@ -100,7 +100,7 @@ const SymptomJournalSetupScreen: React.FC<SymptomJournalSetupScreenProps> = ({ s
           disabled={selectedSymptoms.length === 0}
           className="w-full bg-purple-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-purple-500 transition duration-200 flex items-center justify-center gap-2 disabled:bg-slate-700 disabled:text-slate-400"
         >
-          Commencer le suivi
+          Ouvrir mon Hub de Santé
           <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
             <path fillRule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clipRule="evenodd" />
           </svg>
@@ -109,5 +109,5 @@ const SymptomJournalSetupScreen: React.FC<SymptomJournalSetupScreenProps> = ({ s
     </div>
   );
 };
-
+// FIX: Add default export to resolve module import error.
 export default SymptomJournalSetupScreen;

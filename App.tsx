@@ -1,8 +1,8 @@
 
 import React, { useState, useCallback, useEffect } from 'react';
 import { AppState } from './types';
-import type { Question, Answer, ReportData, PatientContext, SymptomIntensity, PreQuestionnaireAnswer, SymptomCharacteristics, ChatMessage, AppointmentPrepData, EmpathyLevel, ScenarioData, PreventionProfile, PreventionPlanData, NeuroTest, StabilityTestResult, CapillaryRefillTimeResult, SpeechDyspneaResult, TrackedSymptom, SymptomLogEntry, UserSettings, UserProfileData, Medication, RiskAnalysis, TrendAnalysis, TrainingProgress, DiagnosticHistoryEntry, SimulationScenario } from './types';
-import { initializeAi, generateQuestions, generateReport, extractSymptoms, generateExclusionSymptoms, generateSelfExamPrompt, generateNeuroTests, shouldRequestCRT, shouldRequestRespiratoryRate, shouldRequestStabilityTest, shouldRequestSpeechDyspneaTest, generatePhotoPrompt, generateAppointmentPrepData, generateScenarios, generatePreventionPlan, generateDirectReport, shouldTriggerMemoryTest, generateMemoryTestWords, generateMedicationSideEffects, generateRiskAnalysis, analyzeSymptomTrends, generateTrainingScenarios, generateFullSimulationScenario } from './services/geminiService';
+import type { Question, Answer, ReportData, PatientContext, SymptomIntensity, PreQuestionnaireAnswer, SymptomCharacteristics, ChatMessage, AppointmentPrepData, EmpathyLevel, ScenarioData, PreventionProfile, PreventionPlanData, NeuroTest, StabilityTestResult, CapillaryRefillTimeResult, SpeechDyspneaResult, SymptomTrackerConfig, DailyLog, UserSettings, UserProfileData, Medication, RiskAnalysis, TrendAnalysis, TrainingProgress, DiagnosticHistoryEntry, SimulationScenario, SleepLog, MealLog, ActivityLog, MealType, ActivityIntensity, NutritionalInfo, ActivityAnalysis } from './types';
+import { initializeAi, generateQuestions, generateReport, extractSymptoms, generateExclusionSymptoms, generateSelfExamPrompt, generateNeuroTests, shouldRequestCRT, shouldRequestRespiratoryRate, shouldRequestStabilityTest, shouldRequestSpeechDyspneaTest, generatePhotoPrompt, generateAppointmentPrepData, generateScenarios, generatePreventionPlan, generateDirectReport, shouldTriggerMemoryTest, generateMemoryTestWords, generateMedicationSideEffects, generateRiskAnalysis, analyzeHealthTrends, generateTrainingScenarios, generateFullSimulationScenario, analyzeMeal, analyzeActivity } from './services/geminiService';
 import { GoogleGenAI } from "@google/genai";
 import type { Chat } from "@google/genai";
 
@@ -40,7 +40,7 @@ import ScenarioSimulatorScreen from './components/screens/ScenarioSimulatorScree
 import PreventionProfileScreen from './components/screens/PreventionProfileScreen';
 import PreventionPlanReportScreen from './components/screens/PreventionPlanReportScreen';
 import SymptomJournalSetupScreen from './components/screens/SymptomJournalSetupScreen';
-import SymptomJournalScreen from './components/screens/SymptomJournalScreen';
+import HealthHubScreen from './components/screens/SymptomJournalScreen';
 import PillboxScreen from './components/screens/PillboxScreen';
 import AddMedicationScreen from './components/screens/AddMedicationScreen';
 import MedicationDetailScreen from './components/screens/MedicationDetailScreen';
@@ -281,10 +281,11 @@ const App: React.FC = () => {
   const [isChatResponding, setIsChatResponding] = useState(false);
   const [empathyLevel, setEmpathyLevel] = useState<EmpathyLevel>('Empathique');
   
-  // Symptom Journal state
-  const [symptomsToTrackSetup, setSymptomsToTrackSetup] = useState<string[]>([]);
-  const [journalData, setJournalData] = useState<TrackedSymptom[]>([]);
+  // Health Hub state
+  const [symptomTrackingConfig, setSymptomTrackingConfig] = useState<SymptomTrackerConfig[]>([]);
+  const [healthHubData, setHealthHubData] = useState<DailyLog[]>([]);
   const [trendAnalysis, setTrendAnalysis] = useState<TrendAnalysis | null>(null);
+
 
   // Pillbox state
   const [pillboxData, setPillboxData] = useState<Medication[]>([]);
@@ -311,6 +312,7 @@ const App: React.FC = () => {
       apiKey: undefined,
       enableSessionRecovery: true,
       accessLevel: 'free',
+      dailyHydrationGoal: 2000,
   });
   const [userProfile, setUserProfile] = useState<UserProfileData | null>(null);
   
@@ -371,7 +373,9 @@ const App: React.FC = () => {
     setChatSession(null);
     setChatHistory([]);
     setIsChatResponding(false);
-    setSymptomsToTrackSetup([]);
+    // Do not reset health hub data on normal reset
+    // setSymptomTrackingConfig([]); 
+    // setHealthHubData([]);
     setTrendAnalysis(null);
     setActiveMedicationId(null);
     setSimulationScenario(null);
@@ -391,8 +395,11 @@ const App: React.FC = () => {
   // Load persistent data from localStorage on initial mount
   useEffect(() => {
     try {
-      const savedJournal = localStorage.getItem('medai-journal');
-      if (savedJournal) setJournalData(JSON.parse(savedJournal));
+      const savedHub = localStorage.getItem('medai-healthhub');
+      if (savedHub) setHealthHubData(JSON.parse(savedHub));
+
+      const savedSymptomConfig = localStorage.getItem('medai-symptom-config');
+      if (savedSymptomConfig) setSymptomTrackingConfig(JSON.parse(savedSymptomConfig));
 
       const savedPillbox = localStorage.getItem('medai-pillbox');
       if (savedPillbox) setPillboxData(JSON.parse(savedPillbox));
@@ -402,6 +409,7 @@ const App: React.FC = () => {
         const savedSettings = JSON.parse(savedSettingsRaw);
         if (savedSettings.enableSessionRecovery === undefined) savedSettings.enableSessionRecovery = true;
         if (savedSettings.accessLevel === undefined) savedSettings.accessLevel = 'free';
+        if (savedSettings.dailyHydrationGoal === undefined) savedSettings.dailyHydrationGoal = 2000;
         setUserSettings(savedSettings);
       }
 
@@ -505,11 +513,13 @@ const App: React.FC = () => {
   }, []);
 
   const clearJournal = useCallback(() => {
-    setJournalData([]);
+    setHealthHubData([]);
+    setSymptomTrackingConfig([]);
     try {
-      localStorage.removeItem('medai-journal');
+      localStorage.removeItem('medai-healthhub');
+      localStorage.removeItem('medai-symptom-config');
     } catch (error) {
-      console.error("Failed to clear journal data", error);
+      console.error("Failed to clear health hub data", error);
     }
   }, []);
 
@@ -559,18 +569,23 @@ const App: React.FC = () => {
   }, []);
 
 
-  // Save journal to localStorage whenever it changes
+  // Save health hub to localStorage whenever it changes
   useEffect(() => {
     try {
-      if (journalData.length > 0) {
-        localStorage.setItem('medai-journal', JSON.stringify(journalData));
+      if (healthHubData.length > 0) {
+        localStorage.setItem('medai-healthhub', JSON.stringify(healthHubData));
       } else {
-        localStorage.removeItem('medai-journal');
+        localStorage.removeItem('medai-healthhub');
+      }
+      if(symptomTrackingConfig.length > 0) {
+        localStorage.setItem('medai-symptom-config', JSON.stringify(symptomTrackingConfig));
+      } else {
+        localStorage.removeItem('medai-symptom-config');
       }
     } catch (error) {
-      console.error("Failed to save journal data to localStorage", error);
+      console.error("Failed to save health hub data to localStorage", error);
     }
-  }, [journalData]);
+  }, [healthHubData, symptomTrackingConfig]);
   
   // Save pillbox to localStorage whenever it changes
   useEffect(() => {
@@ -1306,59 +1321,98 @@ const App: React.FC = () => {
   const handleStartTracking = useCallback(() => {
       if (report) {
           const mainIssues = report.possibleIssues.map(p => p.name);
-          setSymptomsToTrackSetup(mainIssues);
+          setSymptomTrackingConfig(mainIssues.map(name => ({ name })));
           setAppState(AppState.SYMPTOM_JOURNAL_SETUP);
       }
   }, [report]);
 
-  const handleGoToJournal = useCallback(() => {
-      setAppState(AppState.SYMPTOM_JOURNAL);
+  const handleGoToHealthHub = useCallback(() => {
+      setAppState(AppState.HEALTH_HUB);
   }, []);
 
   const handleSymptomJournalSetup = useCallback((symptomsToTrack: string[]) => {
-      const newJournalData: TrackedSymptom[] = symptomsToTrack.map(name => {
-          const existing = journalData.find(s => s.name === name);
-          return existing || { name, logs: [] };
-      });
-      setJournalData(newJournalData);
-      setAppState(AppState.SYMPTOM_JOURNAL);
-  }, [journalData]);
-
-  const handleAddJournalEntry = useCallback((symptomName: string, entry: Omit<SymptomLogEntry, 'date'>) => {
-      const today = new Date().toISOString().split('T')[0];
-      setJournalData(prevData => {
-          return prevData.map(symptom => {
-              if (symptom.name === symptomName) {
-                  const existingLogIndex = symptom.logs.findIndex(log => log.date === today);
-                  const newLogs = [...symptom.logs];
-                  if (existingLogIndex > -1) {
-                      newLogs[existingLogIndex] = { date: today, ...entry };
-                  } else {
-                      newLogs.push({ date: today, ...entry });
-                  }
-                  return { ...symptom, logs: newLogs };
-              }
-              return symptom;
-          });
-      });
+      setSymptomTrackingConfig(symptomsToTrack.map(name => ({ name })));
+      setAppState(AppState.HEALTH_HUB);
   }, []);
 
-    const handleAnalyzeTrends = useCallback(async () => {
+  // Health Hub Handlers
+    const getOrCreateDailyLog = useCallback((date: string): [DailyLog, DailyLog[]] => {
+        const newData = [...healthHubData];
+        let log = newData.find(l => l.date === date);
+        if (!log) {
+            log = {
+                date,
+                hydrationMilliliters: 0,
+                meals: [],
+                activities: [],
+                symptoms: symptomTrackingConfig.map(s => ({ name: s.name, intensity: 0 })),
+            };
+            newData.push(log);
+        }
+        return [log, newData];
+    }, [healthHubData, symptomTrackingConfig]);
+
+    const handleUpdateDailyLog = useCallback((date: string, updatedLog: Partial<DailyLog>) => {
+        setHealthHubData(prevData => {
+            const [log, newData] = getOrCreateDailyLog(date);
+            const logIndex = newData.findIndex(l => l.date === date);
+            newData[logIndex] = { ...log, ...updatedLog };
+            return newData;
+        });
+    }, [getOrCreateDailyLog]);
+
+    const handleAddMeal = useCallback(async (date: string, meal: Omit<MealLog, 'id' | 'nutritionalInfo'>): Promise<NutritionalInfo | null> => {
+        try {
+            const nutritionalInfo = await analyzeMeal(meal.description, meal.photoBase64 || null);
+            const newMeal: MealLog = { ...meal, id: Date.now().toString(), nutritionalInfo };
+            setHealthHubData(prevData => {
+                const [log, newData] = getOrCreateDailyLog(date);
+                log.meals.push(newMeal);
+                const logIndex = newData.findIndex(l => l.date === date);
+                newData[logIndex] = log;
+                return newData;
+            });
+            return nutritionalInfo;
+        } catch (err) {
+            handleError(err instanceof Error ? err.message : "Erreur d'analyse nutritionnelle.", null);
+            return null;
+        }
+    }, [getOrCreateDailyLog, handleError]);
+
+    const handleAddActivity = useCallback(async (date: string, activity: Omit<ActivityLog, 'id' | 'analysis'>): Promise<ActivityAnalysis | null> => {
+        try {
+            const analysis = await analyzeActivity(activity.name, activity.durationMinutes, activity.reps, activity.intensity);
+            const newActivity: ActivityLog = { ...activity, id: Date.now().toString(), analysis };
+            setHealthHubData(prevData => {
+                const [log, newData] = getOrCreateDailyLog(date);
+                log.activities.push(newActivity);
+                const logIndex = newData.findIndex(l => l.date === date);
+                newData[logIndex] = log;
+                return newData;
+            });
+            return analysis;
+        } catch (err) {
+            handleError(err instanceof Error ? err.message : "Erreur d'analyse de l'activité.", null);
+            return null;
+        }
+    }, [getOrCreateDailyLog, handleError]);
+
+    const handleAnalyzeHealthTrends = useCallback(async () => {
+        setAppState(AppState.ANALYZING_HEALTH_TRENDS);
         setIsLoadComplete(false);
         setOnLoadContinue(null);
-        setAppState(AppState.ANALYZING_SYMPTOM_TRENDS);
         try {
-            const analysis = await analyzeSymptomTrends(journalData);
+            const analysis = await analyzeHealthTrends(healthHubData);
             setTrendAnalysis(analysis);
             setIsLoadComplete(true);
             setOnLoadContinue(() => () => {
-                setAppState(AppState.SYMPTOM_JOURNAL);
+                setAppState(AppState.HEALTH_HUB);
                 setOnLoadContinue(null);
             });
         } catch (err) {
-            handleError(err instanceof Error ? err.message : "Erreur lors de l'analyse des tendances.", handleAnalyzeTrends);
+            handleError(err instanceof Error ? err.message : "Erreur lors de l'analyse des tendances.", handleAnalyzeHealthTrends);
         }
-    }, [journalData, handleError]);
+    }, [healthHubData, handleError]);
 
     const handleGoToPillbox = useCallback(() => {
       setAppState(AppState.PILLBOX);
@@ -1505,13 +1559,13 @@ const App: React.FC = () => {
       case AppState.DISCOVER_APP:
         return <DiscoverScreen onBackToLanding={handleReset} />;
       case AppState.LANDING:
-        return <LandingScreen onStartDiagnosis={handleNavigateToPreDiagnosis} onEmergency={handleNavigateToEmergencyGuide} onStartPreventionPlan={handleNavigateToPreventionPlan} onDirectDiagnosisSubmit={handleDirectDiagnosisSubmit} onShowHowItWorks={handleNavigateToHowItWorks} onShowSettings={handleNavigateToSettings} hasJournalData={journalData.length > 0} onGoToJournal={handleGoToJournal} onGoToPillbox={handleGoToPillbox} onStartTraining={handleNavigateToTraining} hasHistory={diagnosticHistory.length > 0} onGoToHistory={handleNavigateToHistory} onDiscoverApp={handleNavigateToDiscoverApp} accessLevel={userSettings.accessLevel} usageCount={usageCount} />;
+        return <LandingScreen onStartDiagnosis={handleNavigateToPreDiagnosis} onEmergency={handleNavigateToEmergencyGuide} onStartPreventionPlan={handleNavigateToPreventionPlan} onDirectDiagnosisSubmit={handleDirectDiagnosisSubmit} onShowHowItWorks={handleNavigateToHowItWorks} onShowSettings={handleNavigateToSettings} hasJournalData={healthHubData.length > 0} onGoToJournal={handleGoToHealthHub} onGoToPillbox={handleGoToPillbox} onStartTraining={handleNavigateToTraining} hasHistory={diagnosticHistory.length > 0} onGoToHistory={handleNavigateToHistory} onDiscoverApp={handleNavigateToDiscoverApp} accessLevel={userSettings.accessLevel} usageCount={usageCount} />;
       case AppState.HOW_IT_WORKS:
         return <HowItWorksScreen onBackToLanding={handleReset} />;
       case AppState.EMERGENCY_GUIDE:
         return <EmergencyGuideScreen onBack={handleReset} />;
       case AppState.SETTINGS:
-        return <SettingsScreen onBackToLanding={handleReset} settings={userSettings} onSettingsChange={handleSettingsChange} journalData={journalData} pillboxData={pillboxData} trainingProgress={trainingProgress} diagnosticHistory={diagnosticHistory} onClearJournal={clearJournal} onClearPillbox={clearPillbox} onClearProfile={clearProfile} onClearTrainingProgress={clearTrainingProgress} onClearHistory={clearHistory} onShowDataPrivacy={handleNavigateToDataPrivacy} />;
+        return <SettingsScreen onBackToLanding={handleReset} settings={userSettings} onSettingsChange={handleSettingsChange} journalData={healthHubData} pillboxData={pillboxData} trainingProgress={trainingProgress} diagnosticHistory={diagnosticHistory} onClearJournal={clearJournal} onClearPillbox={clearPillbox} onClearProfile={clearProfile} onClearTrainingProgress={clearTrainingProgress} onClearHistory={clearHistory} onShowDataPrivacy={handleNavigateToDataPrivacy} />;
       case AppState.DATA_PRIVACY_EXPLANATION:
         return <DataPrivacyScreen onBack={handleNavigateToSettings} />;
       case AppState.PRE_DIAGNOSIS:
@@ -1597,10 +1651,10 @@ const App: React.FC = () => {
       case AppState.PREVENTION_PLAN_REPORT:
           return <PreventionPlanReportScreen plan={preventionPlan!} riskAnalysis={riskAnalysis!} onReset={handleReset} />;
       case AppState.SYMPTOM_JOURNAL_SETUP:
-          return <SymptomJournalSetupScreen suggestedSymptoms={symptomsToTrackSetup} onSubmit={handleSymptomJournalSetup} onBackToReport={handleBackToReport} />;
-      case AppState.SYMPTOM_JOURNAL:
-          return <SymptomJournalScreen journalData={journalData} onAddEntry={handleAddJournalEntry} onBack={handleReset} onAnalyzeTrends={handleAnalyzeTrends} trendAnalysis={trendAnalysis} onClearTrendAnalysis={() => setTrendAnalysis(null)} />;
-      case AppState.ANALYZING_SYMPTOM_TRENDS:
+          return <SymptomJournalSetupScreen suggestedSymptoms={symptomTrackingConfig.map(s => s.name)} onSubmit={handleSymptomJournalSetup} onBackToReport={handleBackToReport} />;
+      case AppState.HEALTH_HUB:
+          return <HealthHubScreen healthData={healthHubData} symptomConfig={symptomTrackingConfig} onUpdateLog={handleUpdateDailyLog} onAddMeal={handleAddMeal} onAddActivity={handleAddActivity} onBack={handleReset} onAnalyzeTrends={handleAnalyzeHealthTrends} trendAnalysis={trendAnalysis} onClearTrendAnalysis={() => setTrendAnalysis(null)} hydrationGoal={userSettings.dailyHydrationGoal || 2000} accessLevel={userSettings.accessLevel} />;
+      case AppState.ANALYZING_HEALTH_TRENDS:
           return <Loader text="Analyse des tendances..." isComplete={isLoadComplete} onContinue={onLoadContinue!} />;
       case AppState.PILLBOX:
           return <PillboxScreen pillboxData={pillboxData} onNavigateToAdd={handleNavigateToAddMedication} onNavigateToDetail={handleNavigateToMedicationDetail} onBack={handleReset} onDeleteMedication={handleDeleteMedication} />;
@@ -1626,7 +1680,7 @@ const App: React.FC = () => {
       case AppState.ERROR:
         return <ErrorScreen message={error || "Une erreur inconnue est survenue."} onRetry={retryAction || handleReset} />;
       default:
-        return <LandingScreen onStartDiagnosis={handleNavigateToPreDiagnosis} onEmergency={handleNavigateToEmergencyGuide} onStartPreventionPlan={handleNavigateToPreventionPlan} onDirectDiagnosisSubmit={handleDirectDiagnosisSubmit} onShowHowItWorks={handleNavigateToHowItWorks} onShowSettings={handleNavigateToSettings} hasJournalData={journalData.length > 0} onGoToJournal={handleGoToJournal} onGoToPillbox={handleGoToPillbox} onStartTraining={handleNavigateToTraining} hasHistory={diagnosticHistory.length > 0} onGoToHistory={handleNavigateToHistory} onDiscoverApp={handleNavigateToDiscoverApp} accessLevel={userSettings.accessLevel} usageCount={usageCount} />;
+        return <LandingScreen onStartDiagnosis={handleNavigateToPreDiagnosis} onEmergency={handleNavigateToEmergencyGuide} onStartPreventionPlan={handleNavigateToPreventionPlan} onDirectDiagnosisSubmit={handleDirectDiagnosisSubmit} onShowHowItWorks={handleNavigateToHowItWorks} onShowSettings={handleNavigateToSettings} hasJournalData={healthHubData.length > 0} onGoToJournal={handleGoToHealthHub} onGoToPillbox={handleGoToPillbox} onStartTraining={handleNavigateToTraining} hasHistory={diagnosticHistory.length > 0} onGoToHistory={handleNavigateToHistory} onDiscoverApp={handleNavigateToDiscoverApp} accessLevel={userSettings.accessLevel} usageCount={usageCount} />;
     }
   };
 

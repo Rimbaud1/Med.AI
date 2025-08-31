@@ -295,3 +295,29 @@ export const LockClosedIcon: React.FC<{ className?: string }> = ({ className }) 
       <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 00-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
     </svg>
 );
+
+export const MoonIcon: React.FC<{ className?: string }> = ({ className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className={className}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M21.752 15.002A9.72 9.72 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z" />
+    </svg>
+);
+
+export const DropletIcon: React.FC<{ className?: string }> = ({ className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className={className}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 21a9.01 9.01 0 006.364-15.364A9.01 9.01 0 0012 3a9.01 9.01 0 00-6.364 15.364A9.01 9.01 0 0012 21zm0 0a2.25 2.25 0 002.25-2.25H9.75A2.25 2.25 0 0012 21z" />
+    </svg>
+);
+
+export const DumbbellIcon: React.FC<{ className?: string }> = ({ className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className={className}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M6 6.878V17.122a2.25 2.25 0 002.25 2.25h1.5a2.25 2.25 0 002.25-2.25V6.878m0-2.25h.008v.008H9.75v-.008m0 14.622h.008v.008H9.75v-.008M14.25 6.878V17.122a2.25 2.25 0 002.25 2.25h1.5a2.25 2.25 0 002.25-2.25V6.878m0-2.25h.008v.008H17.25v-.008m0 14.622h.008v.008H17.25v-.008M4.5 12h15" />
+    </svg>
+);
+
+export const ForkKnifeIcon: React.FC<{ className?: string }> = ({ className }) => (
+     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className={className}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12.75 3.375v17.25M17.25 3.375v17.25M7.5 3.375v17.25M4.125 7.875h15.75M4.125 12.375h15.75M4.125 16.875h15.75" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M5.25 3.375c0-1.036.84-1.875 1.875-1.875h.01c1.036 0 1.875.84 1.875 1.875v17.25c0 1.036-.84 1.875-1.875 1.875h-.01c-1.036 0-1.875-.84-1.875-1.875V3.375z" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 3.375c0-1.036.84-1.875 1.875-1.875h.01c1.036 0 1.875.84 1.875 1.875v17.25c0 1.036-.84 1.875-1.875 1.875h-.01c-1.036 0-1.875-.84-1.875-1.875V3.375z" />
+    </svg>
+);

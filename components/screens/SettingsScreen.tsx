@@ -1,12 +1,13 @@
+
 import React, { useState, useEffect } from 'react';
-import type { UserSettings, TrackedSymptom, Medication, TrainingProgress, DiagnosticHistoryEntry } from '../../types';
+import type { UserSettings, DailyLog, Medication, TrainingProgress, DiagnosticHistoryEntry } from '../../types';
 import { Cog6ToothIcon, InformationCircleIcon, CheckCircleIcon, NewspaperIcon, SparklesIcon } from '../icons';
 
 interface SettingsScreenProps {
   onBackToLanding: () => void;
   settings: UserSettings;
   onSettingsChange: (newSettings: UserSettings) => void;
-  journalData: TrackedSymptom[];
+  journalData: DailyLog[];
   pillboxData: Medication[];
   trainingProgress: TrainingProgress;
   diagnosticHistory: DiagnosticHistoryEntry[];
@@ -82,7 +83,7 @@ const SettingsScreen: React.FC<SettingsScreenProps> = (props) => {
   };
   
   const handleClearJournal = () => {
-    if(window.confirm("Êtes-vous sûr de vouloir supprimer définitivement votre journal de santé ? Cette action est irréversible.")) {
+    if(window.confirm("Êtes-vous sûr de vouloir supprimer définitivement votre Hub de Santé ? Toutes vos données de sommeil, repas, activité et symptômes seront perdues. Cette action est irréversible.")) {
       onClearJournal();
     }
   }
@@ -158,7 +159,6 @@ const SettingsScreen: React.FC<SettingsScreenProps> = (props) => {
     }
   }
 
-  const journalEntryCount = journalData.reduce((acc, symptom) => acc + symptom.logs.length, 0);
   const accessLevelText = {
       free: 'Gratuit (limité)',
       own_key: 'Clé d\'API personnelle',
@@ -274,11 +274,11 @@ const SettingsScreen: React.FC<SettingsScreenProps> = (props) => {
             </div>
              <div className="p-4 rounded-lg bg-slate-800/60 border border-slate-700/80 flex flex-col sm:flex-row items-center justify-between gap-4">
                 <div>
-                  <h4 className="font-semibold text-slate-200">Journal de Santé</h4>
-                  <p className="text-sm text-slate-400">{journalData.length > 0 ? `${journalData.length} symptôme(s) suivi(s), ${journalEntryCount} entrée(s) au total.` : "Aucune donnée dans le journal."}</p>
+                  <h4 className="font-semibold text-slate-200">Hub de Santé</h4>
+                  <p className="text-sm text-slate-400">{journalData.length > 0 ? `${journalData.length} jour(s) de données enregistrés.` : "Aucune donnée dans le hub."}</p>
                 </div>
                 <button onClick={handleClearJournal} disabled={journalData.length === 0} className="w-full sm:w-auto bg-red-600/80 text-white font-bold py-2 px-4 rounded-lg hover:bg-red-500 disabled:bg-slate-700 disabled:text-slate-400 disabled:cursor-not-allowed transition-colors">
-                  Vider le journal
+                  Vider le hub
                 </button>
             </div>
              <div className="p-4 rounded-lg bg-slate-800/60 border border-slate-700/80 flex flex-col sm:flex-row items-center justify-between gap-4">

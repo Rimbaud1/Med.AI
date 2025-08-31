@@ -1,10 +1,5 @@
 
 
-
-
-
-
-
 import React, { useState } from 'react';
 import { StethoscopeIcon, ClipboardDocumentCheckIcon, ShieldExclamationIcon, ShieldCheckIcon, BeakerIcon, InformationCircleIcon, BookOpenIcon, Cog6ToothIcon, PillIcon, AcademicCapIcon, NewspaperIcon, SparklesIcon, WarningIcon } from '../icons';
 
@@ -171,23 +166,23 @@ const LandingScreen: React.FC<LandingScreenProps> = ({
             </div>
             {/* Symptom Journal Card */}
             <div 
-              className={`bg-slate-800/70 p-8 rounded-xl border border-slate-700 transition-all duration-300 flex flex-col text-center items-center group ${hasJournalData ? 'cursor-pointer hover:border-purple-500 hover:bg-slate-800' : 'opacity-60 cursor-not-allowed'}`}
-              onClick={hasJournalData ? onGoToJournal : undefined}
+              className={`bg-slate-800/70 p-8 rounded-xl border border-slate-700 transition-all duration-300 flex flex-col text-center items-center group cursor-pointer hover:border-purple-500 hover:bg-slate-800`}
+              onClick={onGoToJournal}
               role="button"
-              tabIndex={hasJournalData ? 0 : -1}
+              tabIndex={0}
               aria-label="Accéder à mon journal de santé"
             >
               <div className="flex-shrink-0 bg-purple-500/10 p-4 rounded-full mb-4 border border-purple-500/30 transition-colors duration-300 group-hover:bg-purple-500/20">
                 <BookOpenIcon className="h-10 w-10 text-purple-400" />
               </div>
               <div className="flex-grow flex flex-col">
-                <h2 className="text-2xl font-bold text-slate-100">Mon Journal de Santé</h2>
+                <h2 className="text-2xl font-bold text-slate-100">Mon Hub de Santé</h2>
                 <p className="mt-2 text-slate-400 flex-grow">
-                  {hasJournalData ? "Consultez et mettez à jour le suivi de vos symptômes." : "Disponible après votre premier diagnostic."}
+                  Suivez votre sommeil, alimentation, activité, hydratation et symptômes au quotidien.
                 </p>
               </div>
-              <span className={`mt-6 whitespace-nowrap text-white font-bold py-2 px-6 rounded-lg transition-colors duration-300 ${hasJournalData ? 'bg-purple-600 group-hover:bg-purple-500' : 'bg-slate-700'}`}>
-                {hasJournalData ? "Ouvrir" : "Verrouillé"}
+              <span className={`mt-6 whitespace-nowrap text-white font-bold py-2 px-6 rounded-lg transition-colors duration-300 bg-purple-600 group-hover:bg-purple-500`}>
+                Ouvrir
               </span>
             </div>
         </div>

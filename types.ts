@@ -39,7 +39,7 @@ export enum AppState {
   SYMPTOM_MONITORING,
   REPORT,
   SYMPTOM_JOURNAL_SETUP,
-  SYMPTOM_JOURNAL,
+  HEALTH_HUB, // Replaces SYMPTOM_JOURNAL
   DIAGNOSTIC_SUMMARY,
   DIAGNOSTIC_HISTORY,
   PSYCHOLOGICAL_SUPPORT,
@@ -50,7 +50,7 @@ export enum AppState {
   PREVENTION_PLAN_PROFILE,
   GENERATING_PREVENTION_PLAN,
   PREVENTION_PLAN_REPORT,
-  ANALYZING_SYMPTOM_TRENDS,
+  ANALYZING_HEALTH_TRENDS, // Replaces ANALYZING_SYMPTOM_TRENDS
   PILLBOX,
   PILLBOX_ADD_MEDICATION,
   GENERATING_SIDE_EFFECTS,
@@ -161,118 +161,96 @@ export type AlcoholConsumption = 'Aucune' | 'Faible (1-2 fois/semaine)' | 'Modé
 export type PhysicalActivity = 'Sédentaire (peu ou pas)' | 'Légère (marche)' | 'Modérée (jogging, vélo 3x/semaine)' | 'Intense (sport > 3x/semaine)';
 export type DietQuality = 'Très saine (équilibrée, fruits/légumes)' | 'Assez saine' | 'Peu équilibrée (fast-food fréquent)' | 'Pas du tout saine';
 
-
 export interface PreventionProfile {
-  sex: 'Homme' | 'Femme' | 'Autre';
-  age: number;
-  smokingStatus: SmokingStatus;
-  alcoholConsumption: AlcoholConsumption;
-  physicalActivity: PhysicalActivity;
-  dietQuality: DietQuality;
-  personalMedicalHistory: string;
-  familyMedicalHistory: string;
+    sex: 'Homme' | 'Femme' | 'Autre';
+    age: number;
+    smokingStatus: SmokingStatus;
+    alcoholConsumption: AlcoholConsumption;
+    physicalActivity: PhysicalActivity;
+    dietQuality: DietQuality;
+    personalMedicalHistory: string;
+    familyMedicalHistory: string;
 }
 
 export interface PreventionRecommendation {
-  title: string;
-  reason: string;
-  details: string;
+    title: string;
+    reason: string;
+    details: string;
 }
 
 export interface PreventionPlanData {
-  recommendedScreenings: PreventionRecommendation[];
-  vaccinationAdvice: PreventionRecommendation[];
-  lifestyleSuggestions: PreventionRecommendation[];
-  generalDisclaimer: string;
-}
-
-export interface RiskAnalysisItem {
-  name: string;
-  riskLevel: 'Faible' | 'Modéré' | 'Élevé';
-  explanation: string;
-  suggestion: string;
-}
-
-export interface RiskAnalysis {
-  risks: RiskAnalysisItem[];
-}
-
-export interface TrendFinding {
-  finding: string;
-  explanation: string;
-}
-
-export interface TrendAnalysis {
-  summary: string;
-  findings: TrendFinding[];
+    recommendedScreenings: PreventionRecommendation[];
+    vaccinationAdvice: PreventionRecommendation[];
+    lifestyleSuggestions: PreventionRecommendation[];
+    generalDisclaimer: string;
 }
 
 export interface NeuroTest {
-  question: string;
-  answer: boolean; // true for oui, false for non
+    question: string;
+    answer: boolean; // true for abnormal, false for normal
 }
 
 export type CapillaryRefillTimeResult = 'Moins de 2 secondes (Normal)' | 'Entre 2 et 3 secondes (À surveiller)' | 'Plus de 3 secondes (Lent)';
-
 export type StabilityTestResult = 'Parfaitement stable' | 'Légère oscillation, stable' | 'Instabilité notable (a dû bouger les pieds)' | 'Instabilité sévère (presque tombé ou a eu besoin d\'un support)';
 
 export interface SpeechDyspneaResult {
-  wordsRead: number;
-  totalWords: number;
+    wordsRead: number;
+    totalWords: number;
 }
-
-// Types for Symptom Journal
-export interface SymptomLogEntry {
-  date: string; // ISO string for date YYYY-MM-DD
-  intensity: number; // 1-10
-  notes?: string;
-}
-
-export interface TrackedSymptom {
-  name: string;
-  logs: SymptomLogEntry[];
-}
-
-// Types for Pillbox
-export type MedicationFrequency = '1x / jour' | '2x / jour' | '3x / jour' | 'Toutes les 4-6h' | 'Au besoin';
 
 export interface MedicationSideEffectInfo {
     common: { name: string; description: string }[];
     rare: { name: string; description: string; warning: string }[];
 }
 
-export interface Medication {
-  id: string; // unique ID, e.g., timestamp
+export interface RiskAnalysis {
+    risks: {
+        name: string;
+        riskLevel: 'Faible' | 'Modéré' | 'Élevé';
+        explanation: string;
+        suggestion: string;
+    }[];
+}
+
+// LEGACY: For old symptom journal - to fix import error
+export interface TrackedSymptomLog {
+  date: string; 
+  intensity: number; 
+  notes?: string;
+}
+export interface TrackedSymptom {
   name: string;
-  frequency: MedicationFrequency;
-  durationDays: number | null; // null for ongoing
-  startDate: string; // ISO string 'YYYY-MM-DD'
-  sideEffectInfo?: MedicationSideEffectInfo;
-  trackedSideEffects?: { date: string; notes: string }[];
+  logs: TrackedSymptomLog[];
 }
 
-// Types for First Aid Training
-export interface TrainingProgress {
-  protect: boolean;
-  alert: boolean;
-  rescue: boolean;
-}
-
-export interface ScenarioChoice {
-    text: string;
-    isCorrect: boolean;
-    feedback: string;
-}
-
-export interface ScenarioQuestion {
-    question: string;
-    choices: ScenarioChoice[];
+export interface TrendAnalysis {
+    summary: string;
+    findings: {
+        finding: string;
+        explanation: string;
+    }[];
 }
 
 export interface TrainingScenario {
     description: string;
-    questions: ScenarioQuestion[];
+    questions: {
+        question: string;
+        choices: {
+            text: string;
+            isCorrect: boolean;
+            feedback: string;
+        }[];
+    }[];
     debrief: string;
+}
+
+export interface CrosswordData {
+    size: number;
+    grid: (string | null)[][];
+    clues: {
+        across: { number: number; clue: string; row: number; col: number }[];
+        down: { number: number; clue: string; row: number; col: number }[];
+    };
 }
 
 export interface SimulationChoice {
@@ -281,70 +259,148 @@ export interface SimulationChoice {
     feedback: string;
 }
 
-export interface SimulationQuestion {
-    question: string;
-    choices: SimulationChoice[];
-}
-
 export interface SimulationStage {
     introText: string;
-    questions: SimulationQuestion[];
+    questions: {
+        question: string;
+        choices: SimulationChoice[];
+    }[];
 }
-
 export interface SimulationScenario {
-  title: string;
-  description: string;
-  stages: {
-    protect: SimulationStage;
-    alert: SimulationStage;
-    rescue: SimulationStage;
-  };
-  finalDebrief: string;
+    title: string;
+    description: string;
+    stages: {
+        protect: SimulationStage;
+        alert: SimulationStage;
+        rescue: SimulationStage;
+    };
+    finalDebrief: string;
 }
 
+// ---- HEALTH HUB TYPES ----
 
-// Types for User Settings & Profile
+export interface SymptomTrackerConfig {
+    name: string;
+}
+
+export interface SymptomDailyLog {
+    name: string;
+    intensity: number; // 0-10, 0 means not present
+    notes?: string;
+}
+
+export interface SleepLog {
+    startTime: string; // HH:MM
+    endTime: string; // HH:MM
+    awakenings: number;
+    durationHours?: number; // Calculated
+}
+
+export type MealType = 'Petit-déjeuner' | 'Déjeuner' | 'Dîner' | 'Collation';
+
+export interface NutritionalInfo {
+    calories: number;
+    proteins: number; // grams
+    carbs: number; // grams
+    fats: number; // grams
+}
+
+export interface MealLog {
+    id: string;
+    type: MealType;
+    description: string;
+    photoBase64?: string;
+    nutritionalInfo?: NutritionalInfo;
+}
+
+export type ActivityIntensity = 'Faible' | 'Modérée' | 'Élevée';
+
+export interface ActivityAnalysis {
+    caloriesBurned: number;
+    benefits: string[];
+    risks: string[];
+}
+
+export interface ActivityLog {
+    id: string;
+    name: string;
+    durationMinutes?: number;
+    reps?: number;
+    intensity: ActivityIntensity;
+    analysis?: ActivityAnalysis;
+}
+
+export interface DailyLog {
+    date: string; // YYYY-MM-DD
+    sleep?: SleepLog;
+    hydrationMilliliters: number;
+    meals: MealLog[];
+    activities: ActivityLog[];
+    symptoms: SymptomDailyLog[];
+    generalNotes?: string;
+}
+
+// ---- SETTINGS & PROFILE TYPES ----
+
 export interface UserSettings {
-  saveProfileData: {
-    sexAndAge: boolean;
-    weight: boolean;
-    location: boolean;
-    existingConditions: boolean;
-    currentMedications: boolean;
-    allergies: boolean;
-    recentTravels: boolean;
-  };
-  apiKey?: string;
-  enableSessionRecovery?: boolean;
-  accessLevel?: 'free' | 'own_key' | 'premium';
+    saveProfileData: {
+        sexAndAge: boolean;
+        weight: boolean;
+        location: boolean;
+        existingConditions: boolean;
+        currentMedications: boolean;
+        allergies: boolean;
+        recentTravels: boolean;
+    };
+    apiKey?: string;
+    enableSessionRecovery: boolean;
+    accessLevel: 'free' | 'own_key' | 'premium';
+    dailyHydrationGoal: number; // in ml
 }
 
-export type UserProfileData = Partial<Omit<PatientContext, 'age'> & { age: string }>;
+export interface UserProfileData {
+    sex?: 'Homme' | 'Femme' | 'Autre';
+    age?: string;
+    weight?: number;
+    location?: string;
+    existingConditions?: string;
+    currentMedications?: string;
+    allergies?: string;
+    recentTravels?: string;
+}
 
-// Types for Diagnostic History
+// ---- PILLBOX TYPES ----
+
+export type MedicationFrequency = '1x / jour' | '2x / jour' | '3x / jour' | 'Toutes les 4-6h' | 'Au besoin';
+
+export interface MedicationSideEffectLog {
+    date: string;
+    notes: string;
+}
+export interface Medication {
+    id: string;
+    name: string;
+    frequency: MedicationFrequency;
+    durationDays: number | null; // null for ongoing
+    startDate: string; // YYYY-MM-DD
+    sideEffectInfo?: MedicationSideEffectInfo;
+    trackedSideEffects?: MedicationSideEffectLog[];
+}
+
+// ---- TRAINING & HISTORY TYPES ----
+
+export interface TrainingProgress {
+    protect: boolean;
+    alert: boolean;
+    rescue: boolean;
+}
+
 export interface DiagnosticHistoryEntry {
-  id: string; // timestamp
-  name: string;
-  date: string; // ISO string
-  report: ReportData;
-  patientContext: PatientContext;
-  initialSymptoms: string;
-  isDirectFlow: boolean;
-}
-
-// Types for Crossword
-export interface CrosswordClue {
-  number: number;
-  clue: string;
-  row: number;
-  col: number;
-}
-
-export interface CrosswordData {
-  size: number;
-  grid: (string | null)[][];
-  clues: {
-    across: CrosswordClue[];
-    down: CrosswordClue[];
-  };
+    id: string;
+    name: string;
+    date: string; // ISO string
+    report: ReportData;
+    patientContext: PatientContext;
+    initialSymptoms: string;
+    isDirectFlow: boolean;
 }

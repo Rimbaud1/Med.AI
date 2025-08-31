@@ -1,7 +1,8 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
 // FIX: Import CrosswordData type
-import type { Question, ReportData, Answer, PatientContext, PossibleIssue, SymptomIntensity, PreQuestionnaireAnswer, SymptomCharacteristics, AppointmentPrepData, ScenarioData, PreventionProfile, PreventionPlanData, NeuroTest, StabilityTestResult, CapillaryRefillTimeResult, SpeechDyspneaResult, MedicationSideEffectInfo, RiskAnalysis, TrackedSymptom, TrendAnalysis, TrainingScenario, CrosswordData, SimulationScenario } from '../types';
+// FIX: Add imports for Health Hub types and update legacy TrackedSymptom usage.
+import type { Question, ReportData, Answer, PatientContext, PossibleIssue, SymptomIntensity, PreQuestionnaireAnswer, SymptomCharacteristics, AppointmentPrepData, ScenarioData, PreventionProfile, PreventionPlanData, NeuroTest, StabilityTestResult, CapillaryRefillTimeResult, SpeechDyspneaResult, MedicationSideEffectInfo, RiskAnalysis, TrackedSymptom, TrendAnalysis, TrainingScenario, CrosswordData, SimulationScenario, DailyLog, NutritionalInfo, ActivityAnalysis, ActivityIntensity } from '../types';
 
 let _ai: GoogleGenAI | null = null;
 
@@ -1177,23 +1178,42 @@ export async function generateRiskAnalysis(profile: PreventionProfile): Promise<
     }
 }
 
-export async function analyzeSymptomTrends(journalData: TrackedSymptom[]): Promise<TrendAnalysis> {
+// FIX: Renamed from analyzeSymptomTrends to analyzeHealthTrends and updated to use DailyLog[]
+export async function analyzeHealthTrends(healthData: DailyLog[]): Promise<TrendAnalysis> {
     const ai = getClient();
     const model = 'gemini-2.5-flash';
-    const systemInstruction = `Tu es un assistant médical IA spécialisé dans l'analyse de données de santé. Analyse les données du journal de symptômes d'un patient pour y déceler des tendances ou des corrélations potentiellement significatives.
+    const systemInstruction = `Tu es un assistant médical IA spécialisé dans l'analyse de données de santé. Analyse les données du journal de santé d'un patient pour y déceler des tendances ou des corrélations potentiellement significatives entre les symptômes, le sommeil, l'alimentation, l'hydratation et l'activité physique.
     La réponse doit être en français et au format JSON avec deux clés :
-    1. 'summary': Un résumé global de 1-2 phrases sur l'évolution générale.
+    1. 'summary': Un résumé global de 1-2 phrases sur l'évolution générale de la santé.
     2. 'findings': Un tableau d'objets. Chaque objet représente une découverte et doit contenir :
-        - 'finding': Une description concise de la tendance ou corrélation (ex: "Augmentation de l'essoufflement corrélée à une augmentation de la fatigue").
-        - 'explanation': Une brève explication sur la pertinence de cette découverte et un conseil (ex: "Cette corrélation pourrait indiquer... Il serait pertinent d'en discuter avec votre médecin.").
+        - 'finding': Une description concise de la tendance ou corrélation (ex: "Les maux de tête semblent apparaître les jours suivant un sommeil de moins de 6 heures.").
+        - 'explanation': Une brève explication sur la pertinence de cette découverte et un conseil (ex: "Cette corrélation pourrait indiquer un lien entre manque de sommeil et céphalées. Il serait pertinent d'en discuter avec votre médecin.").
     Identifie 1 à 3 découvertes pertinentes maximum. Si aucune tendance notable n'est trouvée, le tableau 'findings' peut être vide et le résumé doit l'indiquer.`;
 
-    const formattedJournal = journalData.map(symptom => {
-        const logs = symptom.logs.map(log => `- ${log.date}: Intensité ${log.intensity}/10${log.notes ? ` (Notes: ${log.notes})` : ''}`).join('\n');
-        return `Symptôme: "${symptom.name}"\n${logs}`;
+    const formattedJournal = healthData.map(day => {
+        const symptoms = day.symptoms.filter(s => s.intensity > 0).map(s => `${s.name} (intensité ${s.intensity}/10${s.notes ? `, notes: ${s.notes}` : ''})`).join('; ') || 'Aucun';
+        const meals = day.meals.map(m => m.description).join('; ') || 'Aucun';
+        const activities = day.activities.map(a => `${a.name} (${a.intensity})`).join('; ') || 'Aucune';
+        
+        let sleepDuration = 'Non enregistré';
+        if (day.sleep?.durationHours) {
+            sleepDuration = `${day.sleep.durationHours.toFixed(1)}h (${day.sleep.awakenings} réveils)`;
+        } else if (day.sleep) {
+            sleepDuration = `Durée non calculée (${day.sleep.awakenings} réveils)`;
+        }
+
+        return `
+Date: ${day.date}
+- Sommeil: ${sleepDuration}
+- Hydratation: ${day.hydrationMilliliters}ml
+- Repas: ${meals}
+- Activités: ${activities}
+- Symptômes: ${symptoms}
+- Notes générales: ${day.generalNotes || 'Aucune'}
+        `.trim();
     }).join('\n\n');
 
-    const prompt = `Voici le journal de symptômes du patient. Analyse-le pour trouver des tendances.\n\n${formattedJournal}`;
+    const prompt = `Voici le journal de santé du patient. Analyse-le pour trouver des tendances et corrélations.\n\n${formattedJournal}`;
 
     try {
         const response = await ai.models.generateContent({
@@ -1225,8 +1245,96 @@ export async function analyzeSymptomTrends(journalData: TrackedSymptom[]): Promi
         const jsonString = response.text;
         return JSON.parse(jsonString) as TrendAnalysis;
     } catch (error) {
-        console.error("Error analyzing symptom trends:", error);
-        throw new Error("Impossible d'analyser les tendances des symptômes.");
+        console.error("Error analyzing health trends:", error);
+        throw new Error("Impossible d'analyser les tendances de santé.");
+    }
+}
+
+// FIX: Added missing function to analyze meals.
+export async function analyzeMeal(description: string, imageBase64: string | null): Promise<NutritionalInfo> {
+    const ai = getClient();
+    const model = 'gemini-2.5-flash';
+    const systemInstruction = `Tu es un nutritionniste expert. Analyse la description et/ou la photo d'un repas pour estimer ses valeurs nutritionnelles. Retourne une estimation raisonnable au format JSON.
+    La réponse DOIT contenir :
+    1. 'calories': Nombre entier.
+    2. 'proteins': Nombre entier en grammes.
+    3. 'carbs': Nombre entier en grammes.
+    4. 'fats': Nombre entier en grammes.`;
+    
+    const textPart = { text: `Analyse ce repas : "${description}"` };
+    let contents: any = { parts: [textPart] };
+
+    if (imageBase64) {
+        const imagePart = { inlineData: { mimeType: 'image/jpeg', data: imageBase64 } };
+        contents = { parts: [imagePart, textPart] };
+    }
+
+    try {
+        const response = await ai.models.generateContent({
+            model,
+            contents,
+            config: {
+                systemInstruction,
+                responseMimeType: 'application/json',
+                responseSchema: {
+                    type: Type.OBJECT,
+                    properties: {
+                        calories: { type: Type.INTEGER },
+                        proteins: { type: Type.INTEGER },
+                        carbs: { type: Type.INTEGER },
+                        fats: { type: Type.INTEGER },
+                    },
+                    required: ["calories", "proteins", "carbs", "fats"]
+                }
+            }
+        });
+        const jsonString = response.text;
+        return JSON.parse(jsonString) as NutritionalInfo;
+    } catch (error) {
+        console.error("Error analyzing meal:", error);
+        throw new Error("Impossible d'analyser le repas.");
+    }
+}
+
+// FIX: Added missing function to analyze activities.
+export async function analyzeActivity(name: string, durationMinutes: number | undefined, reps: number | undefined, intensity: ActivityIntensity): Promise<ActivityAnalysis> {
+    const ai = getClient();
+    const model = 'gemini-2.5-flash';
+    const systemInstruction = `Tu es un coach sportif expert. Analyse l'activité physique décrite pour estimer les calories brûlées, les bénéfices et les risques potentiels. Retourne une réponse au format JSON.
+    La réponse DOIT contenir :
+    1. 'caloriesBurned': Nombre entier.
+    2. 'benefits': Tableau de 2-3 chaînes de caractères décrivant les bénéfices (ex: "Renforcement cardiovasculaire").
+    3. 'risks': Tableau de 1-2 chaînes de caractères décrivant les risques potentiels (ex: "Risque de blessure au genou si mal exécuté").`;
+    
+    let prompt = `Analyse l'activité suivante :
+    - Nom: ${name}
+    - Intensité: ${intensity}`;
+    if (durationMinutes) prompt += `\n- Durée: ${durationMinutes} minutes`;
+    if (reps) prompt += `\n- Répétitions: ${reps}`;
+
+    try {
+        const response = await ai.models.generateContent({
+            model,
+            contents: prompt,
+            config: {
+                systemInstruction,
+                responseMimeType: 'application/json',
+                responseSchema: {
+                    type: Type.OBJECT,
+                    properties: {
+                        caloriesBurned: { type: Type.INTEGER },
+                        benefits: { type: Type.ARRAY, items: { type: Type.STRING } },
+                        risks: { type: Type.ARRAY, items: { type: Type.STRING } },
+                    },
+                    required: ["caloriesBurned", "benefits", "risks"]
+                }
+            }
+        });
+        const jsonString = response.text;
+        return JSON.parse(jsonString) as ActivityAnalysis;
+    } catch (error) {
+        console.error("Error analyzing activity:", error);
+        throw new Error("Impossible d'analyser l'activité.");
     }
 }
 
