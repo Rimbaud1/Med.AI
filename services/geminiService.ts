@@ -1,7 +1,4 @@
 
-
-
-
 import { GoogleGenAI, Type } from "@google/genai";
 // FIX: Import CrosswordData type
 import type { Question, ReportData, Answer, PatientContext, PossibleIssue, SymptomIntensity, PreQuestionnaireAnswer, SymptomCharacteristics, AppointmentPrepData, ScenarioData, PreventionProfile, PreventionPlanData, NeuroTest, StabilityTestResult, CapillaryRefillTimeResult, SpeechDyspneaResult, MedicationSideEffectInfo, RiskAnalysis, TrackedSymptom, TrendAnalysis, TrainingScenario, CrosswordData } from '../types';
@@ -1286,7 +1283,7 @@ export async function generateMedicationSideEffects(medicationName: string): Pro
     }
 }
 
-export async function generateTrainingScenarios(topic: 'protect' | 'alert'): Promise<TrainingScenario[]> {
+export async function generateTrainingScenarios(topic: 'protect' | 'alert' | 'rescue'): Promise<TrainingScenario[]> {
     const ai = getClient();
     const model = 'gemini-2.5-flash';
 
@@ -1295,6 +1292,8 @@ export async function generateTrainingScenarios(topic: 'protect' | 'alert'): Pro
         topicInstruction = `Pour le thème 'protect', les scénarios doivent tester la règle d'or "la sécurité du sauveteur d'abord" dans diverses situations (danger électrique, circulation, incendie, etc.).`;
     } else if (topic === 'alert') {
         topicInstruction = `Pour le thème 'alert', les scénarios doivent tester la capacité de l'utilisateur à donner une alerte claire, concise et complète aux services d'urgence (SAMU - 15, Pompiers - 18). Les questions doivent porter sur l'ordre des informations (localisation d'abord), la précision des détails (adresse, état de la victime), le choix du bon numéro, et le comportement à adopter (ne pas raccrocher).`;
+    } else if (topic === 'rescue') {
+        topicInstruction = `Pour le thème 'rescue', les scénarios doivent tester la capacité de l'utilisateur à choisir le bon geste de secours face à une situation donnée. Les scénarios doivent couvrir : l'étouffement (adulte/enfant), l'hémorragie externe, la perte de connaissance (avec et sans respiration normale), et l'arrêt cardiaque (quand commencer le massage cardiaque, comment utiliser un DAE). Les questions doivent être des mises en situation claires.`;
     }
 
     const systemInstruction = `Tu es un formateur en premiers secours. Génère une série de 5 scénarios interactifs uniques pour un utilisateur qui apprend la théorie sur le thème '${topic}'.

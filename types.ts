@@ -1,7 +1,4 @@
 
-
-
-
 export enum AppState {
   DISCOVER_APP,
   LANDING,
@@ -61,6 +58,7 @@ export enum AppState {
   TRAINING,
   TRAINING_PROTECT,
   TRAINING_ALERT,
+  TRAINING_RESCUE,
   ERROR,
 }
 

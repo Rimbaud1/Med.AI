@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback, useEffect } from 'react';
 import { AppState } from './types';
 import type { Question, Answer, ReportData, PatientContext, SymptomIntensity, PreQuestionnaireAnswer, SymptomCharacteristics, ChatMessage, AppointmentPrepData, EmpathyLevel, ScenarioData, PreventionProfile, PreventionPlanData, NeuroTest, StabilityTestResult, CapillaryRefillTimeResult, SpeechDyspneaResult, TrackedSymptom, SymptomLogEntry, UserSettings, UserProfileData, Medication, RiskAnalysis, TrendAnalysis, TrainingProgress, DiagnosticHistoryEntry } from './types';
@@ -46,6 +47,7 @@ import MedicationDetailScreen from './components/screens/MedicationDetailScreen'
 import TrainingScreen from './components/screens/TrainingScreen';
 import ProtectScreen from './components/screens/training/ProtectScreen';
 import AlertScreen from './components/screens/training/AlertScreen';
+import RescueScreen from './components/screens/training/RescueScreen';
 import { NewspaperIcon, TrashIcon, ClockIcon, HeartIcon, SparklesIcon, InformationCircleIcon, WarningIcon } from './components/icons';
 import DiscoverScreen from './components/screens/DiscoverScreen';
 
@@ -679,6 +681,10 @@ const App: React.FC = () => {
     setAppState(AppState.TRAINING_ALERT);
   }, []);
 
+  const handleNavigateToTrainingRescue = useCallback(() => {
+    setAppState(AppState.TRAINING_RESCUE);
+  }, []);
+
   const handleCompleteProtectSection = useCallback(() => {
     setTrainingProgress(prev => ({ ...prev, protect: true }));
     setAppState(AppState.TRAINING);
@@ -686,6 +692,11 @@ const App: React.FC = () => {
 
   const handleCompleteAlertSection = useCallback(() => {
     setTrainingProgress(prev => ({ ...prev, alert: true }));
+    setAppState(AppState.TRAINING);
+  }, []);
+
+  const handleCompleteRescueSection = useCallback(() => {
+    setTrainingProgress(prev => ({ ...prev, rescue: true }));
     setAppState(AppState.TRAINING);
   }, []);
 
@@ -1544,11 +1555,13 @@ const App: React.FC = () => {
           const activeMedication = pillboxData.find(m => m.id === activeMedicationId);
           return activeMedication ? <MedicationDetailScreen medication={activeMedication} onUpdateSideEffectNotes={handleUpdateSideEffectNotes} onBack={handleGoToPillbox} /> : <ErrorScreen message="Médicament non trouvé." onRetry={handleGoToPillbox} />;
       case AppState.TRAINING:
-          return <TrainingScreen onBackToLanding={handleReset} onNavigateToTrainingProtect={handleNavigateToTrainingProtect} onNavigateToTrainingAlert={handleNavigateToTrainingAlert} trainingProgress={trainingProgress} />;
+          return <TrainingScreen onBackToLanding={handleReset} onNavigateToTrainingProtect={handleNavigateToTrainingProtect} onNavigateToTrainingAlert={handleNavigateToTrainingAlert} onNavigateToTrainingRescue={handleNavigateToTrainingRescue} trainingProgress={trainingProgress} />;
       case AppState.TRAINING_PROTECT:
           return <ProtectScreen onComplete={handleCompleteProtectSection} onBack={() => setAppState(AppState.TRAINING)} />;
       case AppState.TRAINING_ALERT:
           return <AlertScreen onComplete={handleCompleteAlertSection} onBack={() => setAppState(AppState.TRAINING)} />;
+      case AppState.TRAINING_RESCUE:
+          return <RescueScreen onComplete={handleCompleteRescueSection} onBack={() => setAppState(AppState.TRAINING)} />;
       case AppState.DIAGNOSTIC_HISTORY:
         return <DiagnosticHistoryScreen history={diagnosticHistory} onViewReport={handleViewHistoricReport} onDeleteReport={handleDeleteHistoricReport} onBack={() => setAppState(AppState.LANDING)} />;
       case AppState.ERROR:
