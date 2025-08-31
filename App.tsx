@@ -1,11 +1,3 @@
-
-
-
-
-
-
-
-
 import React, { useState, useCallback, useEffect } from 'react';
 import { AppState } from './types';
 import type { Question, Answer, ReportData, PatientContext, SymptomIntensity, PreQuestionnaireAnswer, SymptomCharacteristics, ChatMessage, AppointmentPrepData, EmpathyLevel, ScenarioData, PreventionProfile, PreventionPlanData, NeuroTest, StabilityTestResult, CapillaryRefillTimeResult, SpeechDyspneaResult, TrackedSymptom, SymptomLogEntry, UserSettings, UserProfileData, Medication, RiskAnalysis, TrendAnalysis, TrainingProgress, DiagnosticHistoryEntry } from './types';
@@ -54,7 +46,7 @@ import MedicationDetailScreen from './components/screens/MedicationDetailScreen'
 import TrainingScreen from './components/screens/TrainingScreen';
 import ProtectScreen from './components/screens/training/ProtectScreen';
 import AlertScreen from './components/screens/training/AlertScreen';
-import { NewspaperIcon, TrashIcon, ClockIcon, HeartIcon } from './components/icons';
+import { NewspaperIcon, TrashIcon, ClockIcon, HeartIcon, SparklesIcon, InformationCircleIcon, WarningIcon } from './components/icons';
 import DiscoverScreen from './components/screens/DiscoverScreen';
 
 // FIX: Define a separate interface for DiagnosticHistoryScreen props to fix a potential type inference issue and improve code readability.
@@ -127,6 +119,111 @@ const DiagnosticHistoryScreen: React.FC<DiagnosticHistoryScreenProps> = ({ histo
                     ))}
                 </div>
             )}
+        </div>
+    );
+};
+
+// --- Welcome Popup Component (defined here to avoid new files) ---
+const getTodayString = () => new Date().toISOString().split('T')[0];
+const getPremiumPassword = () => {
+    const today = new Date();
+    const day = String(today.getDate()).padStart(2, '0');
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const year = today.getFullYear();
+    return `MDP#Med.AI#${day}${month}${year}`;
+};
+
+interface WelcomePopupProps {
+    onChoiceMade: (level: 'free' | 'own_key' | 'premium', apiKey?: string) => void;
+}
+
+const WelcomePopup: React.FC<WelcomePopupProps> = ({ onChoiceMade }) => {
+    const [view, setView] = useState<'choice' | 'apiKey' | 'premium'>('choice');
+    const [keyInput, setKeyInput] = useState('');
+    const [passwordInput, setPasswordInput] = useState('');
+    const [error, setError] = useState('');
+
+    const handlePremiumUnlock = () => {
+        if (passwordInput === getPremiumPassword()) {
+            onChoiceMade('premium');
+        } else {
+            setError('Mot de passe incorrect.');
+        }
+    };
+    
+    const handleApiKeySave = () => {
+        if (keyInput.trim()) {
+            onChoiceMade('own_key', keyInput.trim());
+        } else {
+            setError("La clé d'API ne peut pas être vide.");
+        }
+    }
+
+    const renderChoiceView = () => (
+        <>
+            <h3 className="text-xl font-bold text-slate-100">Cette application utilise l'IA</h3>
+            <p className="text-slate-400 my-4">Choisissez votre mode d'accès. Vous pourrez le modifier plus tard dans les paramètres.</p>
+            <div className="space-y-3">
+                <button onClick={() => onChoiceMade('free')} className="w-full text-left p-4 bg-slate-700/80 rounded-lg hover:bg-sky-600/50 border border-slate-600 hover:border-sky-500 transition-colors">
+                    <p className="font-bold text-sky-300">Utiliser l'IA de l'app (Mode Gratuit)</p>
+                    <ul className="text-xs text-slate-400 list-disc list-inside mt-1">
+                        <li>3 diagnostics par jour</li>
+                        <li>Fonctionnalités de base</li>
+                        <li>Idéal pour découvrir l'application</li>
+                    </ul>
+                </button>
+                <button onClick={() => setView('apiKey')} className="w-full text-left p-4 bg-slate-700/80 rounded-lg hover:bg-indigo-600/50 border border-slate-600 hover:border-indigo-500 transition-colors">
+                    <p className="font-bold text-indigo-300">Utiliser ma propre clé d'API Google</p>
+                    <ul className="text-xs text-slate-400 list-disc list-inside mt-1">
+                        <li>Accès illimité à toutes les fonctionnalités</li>
+                        <li>Confidentialité maximale de vos données</li>
+                        <li>Requiert un compte Google Cloud avec facturation</li>
+                    </ul>
+                </button>
+                <button onClick={() => setView('premium')} className="w-full text-left p-4 bg-slate-700/80 rounded-lg hover:bg-amber-600/50 border border-slate-600 hover:border-amber-500 transition-colors">
+                    <p className="font-bold text-amber-300">Accès Premium</p>
+                    <ul className="text-xs text-slate-400 list-disc list-inside mt-1">
+                        <li>Accès illimité à toutes les fonctionnalités</li>
+                        <li>Déverrouillage par mot de passe</li>
+                    </ul>
+                </button>
+            </div>
+        </>
+    );
+
+    const renderApiKeyView = () => (
+        <>
+            <h3 className="text-xl font-bold text-slate-100">Utiliser votre clé d'API</h3>
+            <p className="text-slate-400 my-4">Veuillez entrer votre clé d'API Google Gemini ci-dessous.</p>
+            {error && <p className="text-red-400 text-sm mb-2">{error}</p>}
+            <input type="password" value={keyInput} onChange={e => setKeyInput(e.target.value)} placeholder="Entrez votre clé..." className="w-full p-2 rounded-md bg-slate-900 border border-slate-600 focus:ring-2 focus:ring-sky-500" />
+            <div className="flex gap-2 mt-4">
+                <button onClick={() => { setView('choice'); setError(''); }} className="bg-slate-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-slate-500">Retour</button>
+                <button onClick={handleApiKeySave} className="bg-sky-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-sky-500 flex-grow">Enregistrer</button>
+            </div>
+        </>
+    );
+    
+    const renderPremiumView = () => (
+         <>
+            <h3 className="text-xl font-bold text-slate-100">Accès Premium</h3>
+            <p className="text-slate-400 my-4">Veuillez entrer le mot de passe d'accès.</p>
+            {error && <p className="text-red-400 text-sm mb-2">{error}</p>}
+            <input type="password" value={passwordInput} onChange={e => setPasswordInput(e.target.value)} placeholder="Mot de passe" className="w-full p-2 rounded-md bg-slate-900 border border-slate-600 focus:ring-2 focus:ring-sky-500" />
+            <div className="flex gap-2 mt-4">
+                <button onClick={() => { setView('choice'); setError(''); }} className="bg-slate-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-slate-500">Retour</button>
+                <button onClick={handlePremiumUnlock} className="bg-amber-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-amber-500 flex-grow">Déverrouiller</button>
+            </div>
+        </>
+    );
+
+    return (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-300">
+            <div className="bg-slate-800 rounded-xl border border-slate-700 shadow-2xl w-full max-w-md p-6 text-center animate-in zoom-in-95 duration-300">
+                {view === 'choice' && renderChoiceView()}
+                {view === 'apiKey' && renderApiKeyView()}
+                {view === 'premium' && renderPremiumView()}
+            </div>
         </div>
     );
 };
@@ -209,6 +306,7 @@ const App: React.FC = () => {
       },
       apiKey: undefined,
       enableSessionRecovery: true,
+      accessLevel: 'free',
   });
   const [userProfile, setUserProfile] = useState<UserProfileData | null>(null);
   
@@ -226,6 +324,64 @@ const App: React.FC = () => {
   const [showResumePopup, setShowResumePopup] = useState(false);
   const [resumableSession, setResumableSession] = useState<any | null>(null);
 
+  // Welcome & Usage state
+  const [showWelcomePopup, setShowWelcomePopup] = useState(false);
+  const [usageCount, setUsageCount] = useState(0);
+
+// FIX: Moved `handleReset` and `handleError` before the `useEffect` that uses them to fix block-scope errors.
+  const handleReset = useCallback(() => {
+    setAppState(AppState.LANDING);
+    setInitialSymptoms('');
+    setPatientContext(null);
+    setExtractedSymptoms([]);
+    setMainSymptom(null);
+    setSymptomIntensities([]);
+    setOverallDiscomfort(null);
+    setSymptomCharacteristics(null);
+    setPreQuestionnaireAnswers([]);
+    setQuestions([]);
+    setAnswers([]);
+    setPotentialExclusionSymptoms([]);
+    setExcludedSymptoms([]);
+    setSelfExamPrompt(null);
+    setSelfExamResult(null);
+    setNeuroTestQuestions([]);
+    setNeuroTestAnswers([]);
+    setCrtResult(null);
+    setRespiratoryRate(null);
+    setStabilityTestResult(null);
+    setSpeechDyspneaResult(null);
+    setPhotoPrompt(null);
+    setPhotoBase64(null);
+    setReport(null);
+    setAppointmentPrepData(null);
+    setScenarioData(null);
+    setError(null);
+    setIsDirectFlow(false);
+    setIsMemoryTestRelevant(false);
+    setMemoryTestWords([]);
+    setMemoryTestResponse([]);
+    setPreventionProfile(null);
+    setPreventionPlan(null);
+    setRiskAnalysis(null);
+    setChatSession(null);
+    setChatHistory([]);
+    setIsChatResponding(false);
+    setSymptomsToTrackSetup([]);
+    setTrendAnalysis(null);
+    setActiveMedicationId(null);
+    setIsLoadComplete(false);
+    setOnLoadContinue(null);
+    setNavigationSource(null);
+    setRetryAction(null);
+  }, []);
+
+  const handleError = useCallback((errorMessage: string, retryFn: (() => void) | null = null) => {
+    setError(errorMessage);
+    setRetryAction(() => retryFn);
+    setAppState(AppState.ERROR);
+  }, []);
+
 
   // Load persistent data from localStorage on initial mount
   useEffect(() => {
@@ -239,10 +395,8 @@ const App: React.FC = () => {
       const savedSettingsRaw = localStorage.getItem('medai-settings');
       if (savedSettingsRaw) {
         const savedSettings = JSON.parse(savedSettingsRaw);
-        // Ensure enableSessionRecovery defaults to true if not present
-        if (savedSettings.enableSessionRecovery === undefined) {
-          savedSettings.enableSessionRecovery = true;
-        }
+        if (savedSettings.enableSessionRecovery === undefined) savedSettings.enableSessionRecovery = true;
+        if (savedSettings.accessLevel === undefined) savedSettings.accessLevel = 'free';
         setUserSettings(savedSettings);
       }
 
@@ -255,6 +409,26 @@ const App: React.FC = () => {
       const savedHistory = localStorage.getItem('medai-diagnostic-history');
       if (savedHistory) setDiagnosticHistory(JSON.parse(savedHistory));
 
+      // Welcome popup check
+      const hasSeenWelcome = localStorage.getItem('medai-has-seen-welcome');
+      if (!hasSeenWelcome) {
+        setShowWelcomePopup(true);
+      }
+
+      // Usage tracker check
+      const trackerRaw = localStorage.getItem('medai-usage-tracker');
+      const today = getTodayString();
+      if (trackerRaw) {
+          const tracker = JSON.parse(trackerRaw);
+          if (tracker.date === today) {
+              setUsageCount(tracker.count);
+          } else {
+              localStorage.setItem('medai-usage-tracker', JSON.stringify({ date: today, count: 0 }));
+          }
+      } else {
+          localStorage.setItem('medai-usage-tracker', JSON.stringify({ date: today, count: 0 }));
+      }
+
     } catch (error) {
       console.error("Failed to load data from localStorage", error);
     }
@@ -262,6 +436,9 @@ const App: React.FC = () => {
   
   // Check for resumable session on initial load
   useEffect(() => {
+    // Only check for session if we are not showing the welcome popup
+    if (showWelcomePopup) return;
+    
     const savedSettingsRaw = localStorage.getItem('medai-settings');
     const savedSettings = savedSettingsRaw ? JSON.parse(savedSettingsRaw) : { enableSessionRecovery: true };
 
@@ -282,7 +459,7 @@ const App: React.FC = () => {
             }
         }
     }
-  }, []);
+  }, [showWelcomePopup]);
 
   // This effect runs on initial load AND every time settings change.
   // It initializes the AI client and saves settings to localStorage.
@@ -303,7 +480,7 @@ const App: React.FC = () => {
     } catch (error) {
       console.error("Failed to save settings", error);
     }
-  }, [userSettings]);
+  }, [userSettings, handleError, handleReset]);
 
   // Save diagnosis session state to localStorage
   const diagnosisState = { appState, initialSymptoms, patientContext, extractedSymptoms, mainSymptom, symptomIntensities, overallDiscomfort, symptomCharacteristics, preQuestionnaireAnswers, questions, answers, potentialExclusionSymptoms, excludedSymptoms, selfExamPrompt, selfExamResult, neuroTestQuestions, neuroTestAnswers, crtResult, respiratoryRate, stabilityTestResult, speechDyspneaResult, photoPrompt, photoBase64, isDirectFlow, isMemoryTestRelevant, memoryTestWords, memoryTestResponse };
@@ -425,59 +602,6 @@ const App: React.FC = () => {
     }
   }, [diagnosticHistory]);
 
-  const handleReset = useCallback(() => {
-    setAppState(AppState.LANDING);
-    setInitialSymptoms('');
-    setPatientContext(null);
-    setExtractedSymptoms([]);
-    setMainSymptom(null);
-    setSymptomIntensities([]);
-    setOverallDiscomfort(null);
-    setSymptomCharacteristics(null);
-    setPreQuestionnaireAnswers([]);
-    setQuestions([]);
-    setAnswers([]);
-    setPotentialExclusionSymptoms([]);
-    setExcludedSymptoms([]);
-    setSelfExamPrompt(null);
-    setSelfExamResult(null);
-    setNeuroTestQuestions([]);
-    setNeuroTestAnswers([]);
-    setCrtResult(null);
-    setRespiratoryRate(null);
-    setStabilityTestResult(null);
-    setSpeechDyspneaResult(null);
-    setPhotoPrompt(null);
-    setPhotoBase64(null);
-    setReport(null);
-    setAppointmentPrepData(null);
-    setScenarioData(null);
-    setError(null);
-    setIsDirectFlow(false);
-    setIsMemoryTestRelevant(false);
-    setMemoryTestWords([]);
-    setMemoryTestResponse([]);
-    setPreventionProfile(null);
-    setPreventionPlan(null);
-    setRiskAnalysis(null);
-    setChatSession(null);
-    setChatHistory([]);
-    setIsChatResponding(false);
-    setSymptomsToTrackSetup([]);
-    setTrendAnalysis(null);
-    setActiveMedicationId(null);
-    setIsLoadComplete(false);
-    setOnLoadContinue(null);
-    setNavigationSource(null);
-    setRetryAction(null);
-  }, []);
-
-  const handleError = useCallback((errorMessage: string, retryFn: (() => void) | null = null) => {
-    setError(errorMessage);
-    setRetryAction(() => retryFn);
-    setAppState(AppState.ERROR);
-  }, []);
-
   const handleNavigateToDiscoverApp = useCallback(() => {
     setAppState(AppState.DISCOVER_APP);
   }, []);
@@ -487,8 +611,22 @@ const App: React.FC = () => {
   }, []);
 
   const handleNavigateToPreDiagnosis = useCallback(() => {
+    const today = getTodayString();
+    const trackerRaw = localStorage.getItem('medai-usage-tracker');
+    let currentCount = 0;
+    if (trackerRaw) {
+        const tracker = JSON.parse(trackerRaw);
+        if (tracker.date === today) {
+            currentCount = tracker.count;
+        }
+    }
+    if (userSettings.accessLevel === 'free' && currentCount >= 3) {
+        alert("Vous avez atteint votre limite de 3 diagnostics pour aujourd'hui. Revenez demain ou changez de mode d'accès dans les paramètres.");
+        return;
+    }
+
     setAppState(AppState.PRE_DIAGNOSIS);
-  }, []);
+  }, [userSettings.accessLevel]);
 
   const handleNavigateToEmergencyGuide = useCallback(() => {
     setAppState(AppState.EMERGENCY_GUIDE);
@@ -557,10 +695,16 @@ const App: React.FC = () => {
   }, []);
 
   const handleStartDiagnosis = useCallback((symptoms: string) => {
+    if (userSettings.accessLevel === 'free') {
+        const today = getTodayString();
+        const newCount = usageCount + 1;
+        setUsageCount(newCount);
+        localStorage.setItem('medai-usage-tracker', JSON.stringify({ date: today, count: newCount }));
+    }
     setInitialSymptoms(symptoms);
     setNavigationSource('landing');
     setAppState(AppState.CONTEXT_GATHERING);
-  }, []);
+  }, [userSettings.accessLevel, usageCount]);
   
   const generateAndSetQuestions = useCallback(async (
     context: PatientContext,
@@ -1276,6 +1420,16 @@ const App: React.FC = () => {
         localStorage.removeItem('medai-diagnosis-session');
         setShowResumePopup(false);
     };
+    
+    const handleWelcomeChoice = useCallback((level: 'free' | 'own_key' | 'premium', apiKey?: string) => {
+        const newSettings = { ...userSettings, accessLevel: level };
+        if (level === 'own_key' && apiKey) {
+            newSettings.apiKey = apiKey;
+        }
+        setUserSettings(newSettings);
+        localStorage.setItem('medai-has-seen-welcome', 'true');
+        setShowWelcomePopup(false);
+    }, [userSettings]);
 
 
   const renderScreen = () => {
@@ -1283,7 +1437,7 @@ const App: React.FC = () => {
       case AppState.DISCOVER_APP:
         return <DiscoverScreen onBackToLanding={handleReset} />;
       case AppState.LANDING:
-        return <LandingScreen onStartDiagnosis={handleNavigateToPreDiagnosis} onEmergency={handleNavigateToEmergencyGuide} onStartPreventionPlan={handleNavigateToPreventionPlan} onDirectDiagnosisSubmit={handleDirectDiagnosisSubmit} onShowHowItWorks={handleNavigateToHowItWorks} onShowSettings={handleNavigateToSettings} hasJournalData={journalData.length > 0} onGoToJournal={handleGoToJournal} onGoToPillbox={handleGoToPillbox} onStartTraining={handleNavigateToTraining} hasHistory={diagnosticHistory.length > 0} onGoToHistory={handleNavigateToHistory} onDiscoverApp={handleNavigateToDiscoverApp} />;
+        return <LandingScreen onStartDiagnosis={handleNavigateToPreDiagnosis} onEmergency={handleNavigateToEmergencyGuide} onStartPreventionPlan={handleNavigateToPreventionPlan} onDirectDiagnosisSubmit={handleDirectDiagnosisSubmit} onShowHowItWorks={handleNavigateToHowItWorks} onShowSettings={handleNavigateToSettings} hasJournalData={journalData.length > 0} onGoToJournal={handleGoToJournal} onGoToPillbox={handleGoToPillbox} onStartTraining={handleNavigateToTraining} hasHistory={diagnosticHistory.length > 0} onGoToHistory={handleNavigateToHistory} onDiscoverApp={handleNavigateToDiscoverApp} accessLevel={userSettings.accessLevel} usageCount={usageCount} />;
       case AppState.HOW_IT_WORKS:
         return <HowItWorksScreen onBackToLanding={handleReset} />;
       case AppState.EMERGENCY_GUIDE:
@@ -1400,13 +1554,14 @@ const App: React.FC = () => {
       case AppState.ERROR:
         return <ErrorScreen message={error || "Une erreur inconnue est survenue."} onRetry={retryAction || handleReset} />;
       default:
-        return <LandingScreen onStartDiagnosis={handleNavigateToPreDiagnosis} onEmergency={handleNavigateToEmergencyGuide} onStartPreventionPlan={handleNavigateToPreventionPlan} onDirectDiagnosisSubmit={handleDirectDiagnosisSubmit} onShowHowItWorks={handleNavigateToHowItWorks} onShowSettings={handleNavigateToSettings} hasJournalData={journalData.length > 0} onGoToJournal={handleGoToJournal} onGoToPillbox={handleGoToPillbox} onStartTraining={handleNavigateToTraining} hasHistory={diagnosticHistory.length > 0} onGoToHistory={handleNavigateToHistory} onDiscoverApp={handleNavigateToDiscoverApp} />;
+        return <LandingScreen onStartDiagnosis={handleNavigateToPreDiagnosis} onEmergency={handleNavigateToEmergencyGuide} onStartPreventionPlan={handleNavigateToPreventionPlan} onDirectDiagnosisSubmit={handleDirectDiagnosisSubmit} onShowHowItWorks={handleNavigateToHowItWorks} onShowSettings={handleNavigateToSettings} hasJournalData={journalData.length > 0} onGoToJournal={handleGoToJournal} onGoToPillbox={handleGoToPillbox} onStartTraining={handleNavigateToTraining} hasHistory={diagnosticHistory.length > 0} onGoToHistory={handleNavigateToHistory} onDiscoverApp={handleNavigateToDiscoverApp} accessLevel={userSettings.accessLevel} usageCount={usageCount} />;
     }
   };
 
   return (
     <div className="bg-slate-900 text-slate-100 min-h-screen flex items-center justify-center font-sans antialiased">
         {renderScreen()}
+        {showWelcomePopup && <WelcomePopup onChoiceMade={handleWelcomeChoice} />}
         {showResumePopup && (
             <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-300">
                 <div className="bg-slate-800 rounded-xl border border-slate-700 shadow-2xl w-full max-w-md p-6 text-center animate-in zoom-in-95 duration-300">

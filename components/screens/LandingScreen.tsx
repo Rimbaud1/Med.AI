@@ -3,8 +3,10 @@
 
 
 
+
+
 import React, { useState } from 'react';
-import { StethoscopeIcon, ClipboardDocumentCheckIcon, ShieldExclamationIcon, ShieldCheckIcon, BeakerIcon, InformationCircleIcon, BookOpenIcon, Cog6ToothIcon, PillIcon, AcademicCapIcon, NewspaperIcon, SparklesIcon } from '../icons';
+import { StethoscopeIcon, ClipboardDocumentCheckIcon, ShieldExclamationIcon, ShieldCheckIcon, BeakerIcon, InformationCircleIcon, BookOpenIcon, Cog6ToothIcon, PillIcon, AcademicCapIcon, NewspaperIcon, SparklesIcon, WarningIcon } from '../icons';
 
 interface LandingScreenProps {
   onStartDiagnosis: () => void;
@@ -20,12 +22,14 @@ interface LandingScreenProps {
   hasHistory: boolean;
   onGoToHistory: () => void;
   onDiscoverApp: () => void;
+  accessLevel?: 'free' | 'own_key' | 'premium';
+  usageCount?: number;
 }
 
 const LandingScreen: React.FC<LandingScreenProps> = ({ 
     onStartDiagnosis, onEmergency, onStartPreventionPlan, onDirectDiagnosisSubmit, 
     onShowHowItWorks, onShowSettings, hasJournalData, onGoToJournal, onGoToPillbox, 
-    onStartTraining, hasHistory, onGoToHistory, onDiscoverApp
+    onStartTraining, hasHistory, onGoToHistory, onDiscoverApp, accessLevel = 'free', usageCount = 0
 }) => {
   const [directDiagnosis, setDirectDiagnosis] = useState('');
 
@@ -35,6 +39,8 @@ const LandingScreen: React.FC<LandingScreenProps> = ({
       onDirectDiagnosisSubmit(directDiagnosis.trim());
     }
   };
+  
+  const diagnosesRemaining = 3 - usageCount;
   
   return (
     <div className="flex flex-col items-center justify-center w-full max-w-4xl mx-auto p-4 md:p-8 relative">
@@ -52,6 +58,13 @@ const LandingScreen: React.FC<LandingScreenProps> = ({
         <br />
         <span className="text-red-400 text-sm font-semibold">Cet outil ne remplace pas un avis médical professionnel.</span>
       </p>
+
+      {accessLevel === 'free' && (
+        <div className={`mt-6 p-3 rounded-lg border flex items-center gap-3 text-sm ${diagnosesRemaining > 0 ? 'bg-sky-500/10 border-sky-500/30 text-sky-300' : 'bg-red-500/10 border-red-500/30 text-red-300'}`}>
+            <InformationCircleIcon className="h-5 w-5 flex-shrink-0" />
+            <span>Mode Gratuit : <strong>{Math.max(0, diagnosesRemaining)} / 3</strong> diagnostics restants aujourd'hui.</span>
+        </div>
+      )}
 
       <div className="w-full mt-8 grid grid-cols-1 md:grid-cols-2 gap-4">
           <button 

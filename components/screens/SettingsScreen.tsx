@@ -1,10 +1,6 @@
-
-
-
-
 import React, { useState, useEffect } from 'react';
 import type { UserSettings, TrackedSymptom, Medication, TrainingProgress, DiagnosticHistoryEntry } from '../../types';
-import { Cog6ToothIcon, InformationCircleIcon, CheckCircleIcon, NewspaperIcon } from '../icons';
+import { Cog6ToothIcon, InformationCircleIcon, CheckCircleIcon, NewspaperIcon, SparklesIcon } from '../icons';
 
 interface SettingsScreenProps {
   onBackToLanding: () => void;
@@ -133,9 +129,11 @@ const SettingsScreen: React.FC<SettingsScreenProps> = (props) => {
   };
   
   const handleApiKeySave = () => {
-    const newSettings = {
+    // FIX: Explicitly type newSettings to ensure accessLevel is not widened to `string`.
+    const newSettings: UserSettings = {
         ...settings,
         apiKey: apiKeyInput.trim() || undefined,
+        accessLevel: apiKeyInput.trim() ? 'own_key' : 'free',
     };
     onSettingsChange(newSettings);
     setApiKeySaveStatus('saved');
@@ -144,14 +142,28 @@ const SettingsScreen: React.FC<SettingsScreenProps> = (props) => {
 
   const handleClearApiKey = () => {
     setApiKeyInput('');
-    const newSettings = {
+    // FIX: Explicitly type newSettings to ensure accessLevel is not widened to `string`.
+    const newSettings: UserSettings = {
         ...settings,
         apiKey: undefined,
+        accessLevel: 'free',
     };
     onSettingsChange(newSettings);
   };
 
+  const handleResetAccess = () => {
+    if (window.confirm("Ceci vous ramènera à l'écran de sélection du mode d'accès au redémarrage de l'application. Continuer ?")) {
+        localStorage.removeItem('medai-has-seen-welcome');
+        window.location.reload();
+    }
+  }
+
   const journalEntryCount = journalData.reduce((acc, symptom) => acc + symptom.logs.length, 0);
+  const accessLevelText = {
+      free: 'Gratuit (limité)',
+      own_key: 'Clé d\'API personnelle',
+      premium: 'Premium'
+  };
 
   return (
     <div className="w-full max-w-3xl mx-auto p-4 md:p-8">
@@ -166,6 +178,23 @@ const SettingsScreen: React.FC<SettingsScreenProps> = (props) => {
       </div>
 
       <div className="space-y-8">
+        {/* Access Level Section */}
+        <section>
+            <h2 className="text-2xl font-semibold text-slate-200 mb-4 pb-2 border-b border-slate-700">Mode d'accès</h2>
+            <div className="p-4 rounded-lg bg-slate-800/60 border border-slate-700/80 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div>
+                  <h4 className="font-semibold text-slate-200">Mode actuel</h4>
+                  <p className="text-sm text-sky-300 flex items-center gap-2">
+                    <SparklesIcon className="h-4 w-4" />
+                    {accessLevelText[settings.accessLevel || 'free']}
+                  </p>
+                </div>
+                <button onClick={handleResetAccess} className="w-full sm:w-auto bg-slate-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-slate-500 transition-colors">
+                  Changer de mode
+                </button>
+            </div>
+        </section>
+
         {/* API Key Section */}
         <section>
             <h2 className="text-2xl font-semibold text-slate-200 mb-4 pb-2 border-b border-slate-700">Clé d'API Gemini</h2>

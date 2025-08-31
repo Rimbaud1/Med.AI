@@ -1,6 +1,7 @@
 
 
 
+
 export enum AppState {
   DISCOVER_APP,
   LANDING,
@@ -289,6 +290,7 @@ export interface UserSettings {
   };
   apiKey?: string;
   enableSessionRecovery?: boolean;
+  accessLevel?: 'free' | 'own_key' | 'premium';
 }
 
 export type UserProfileData = Partial<Omit<PatientContext, 'age'> & { age: string }>;
