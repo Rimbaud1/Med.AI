@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import type { UserSettings, DailyLog, Medication, TrainingProgress, DiagnosticHistoryEntry } from '../../types';
 import { Cog6ToothIcon, InformationCircleIcon, CheckCircleIcon, NewspaperIcon, SparklesIcon } from '../icons';

@@ -1,7 +1,6 @@
-
 import React, { useState, useMemo, useRef, useCallback } from 'react';
-import type { DailyLog, SymptomTrackerConfig, SleepLog, MealLog, ActivityLog, MealType, ActivityIntensity, NutritionalInfo, ActivityAnalysis, TrendAnalysis } from '../../types';
-import { BookOpenIcon, MoonIcon, DropletIcon, DumbbellIcon, ForkKnifeIcon, CalendarDaysIcon, SparklesIcon, InformationCircleIcon, CameraIcon, TrashIcon, ClockIcon } from '../icons';
+import type { DailyLog, SymptomTrackerConfig, SleepLog, MealLog, ActivityLog, MealType, ActivityIntensity, NutritionalInfo, ActivityAnalysis, TrendAnalysis, HubModule } from '../../types';
+import { BookOpenIcon, MoonIcon, DropletIcon, DumbbellIcon, ForkKnifeIcon, CalendarDaysIcon, SparklesIcon, InformationCircleIcon, CameraIcon, TrashIcon, ClockIcon, ArrowsPointingOutIcon } from '../icons';
 
 const fileToBase64 = (file: File): Promise<string> => {
   return new Promise((resolve, reject) => {
@@ -30,14 +29,17 @@ interface HealthHubScreenProps {
   onClearTrendAnalysis: () => void;
   hydrationGoal: number;
   accessLevel: 'free' | 'own_key' | 'premium';
+  onNavigateToDetail: (module: HubModule) => void;
+  onAddSymptomConfig: (name: string) => void;
 }
 
 type ModalType = null | 'sleep' | 'meal' | 'activity';
 
 const HealthHubScreen: React.FC<HealthHubScreenProps> = (props) => {
-    const { healthData, symptomConfig, onUpdateLog, onAddMeal, onAddActivity, onBack, onAnalyzeTrends, trendAnalysis, onClearTrendAnalysis, hydrationGoal, accessLevel } = props;
+    const { healthData, symptomConfig, onUpdateLog, onAddMeal, onAddActivity, onBack, onAnalyzeTrends, trendAnalysis, onClearTrendAnalysis, hydrationGoal, accessLevel, onNavigateToDetail, onAddSymptomConfig } = props;
     const [currentDate, setCurrentDate] = useState(new Date());
     const [activeModal, setActiveModal] = useState<ModalType>(null);
+    const [newSymptomName, setNewSymptomName] = useState('');
 
     const dateString = toYYYYMMDD(currentDate);
 
@@ -67,9 +69,12 @@ const HealthHubScreen: React.FC<HealthHubScreenProps> = (props) => {
     // --- Render Methods for Cards ---
     const renderSleepCard = () => (
         <div className="bg-slate-800 p-4 rounded-lg flex flex-col justify-between">
-            <div className="flex items-center gap-3 mb-3">
-                <MoonIcon className="h-6 w-6 text-indigo-400" />
-                <h3 className="text-lg font-semibold">Sommeil</h3>
+            <div className="flex items-center justify-between gap-3 mb-3">
+                <div className="flex items-center gap-3">
+                    <MoonIcon className="h-6 w-6 text-indigo-400" />
+                    <h3 className="text-lg font-semibold">Sommeil</h3>
+                </div>
+                <button onClick={() => onNavigateToDetail('sleep')} className="p-1 text-slate-400 hover:text-white hover:bg-slate-700 rounded-full transition-colors"><ArrowsPointingOutIcon className="h-5 w-5"/></button>
             </div>
             {dailyLog.sleep ? (
                 <div className="text-center">
@@ -90,9 +95,12 @@ const HealthHubScreen: React.FC<HealthHubScreenProps> = (props) => {
         const progress = Math.min((dailyLog.hydrationMilliliters / hydrationGoal) * 100, 100);
         return (
             <div className="bg-slate-800 p-4 rounded-lg flex flex-col justify-between">
-                <div className="flex items-center gap-3 mb-3">
-                    <DropletIcon className="h-6 w-6 text-sky-400" />
-                    <h3 className="text-lg font-semibold">Hydratation</h3>
+                <div className="flex items-center justify-between gap-3 mb-3">
+                    <div className="flex items-center gap-3">
+                        <DropletIcon className="h-6 w-6 text-sky-400" />
+                        <h3 className="text-lg font-semibold">Hydratation</h3>
+                    </div>
+                     <button onClick={() => onNavigateToDetail('hydration')} className="p-1 text-slate-400 hover:text-white hover:bg-slate-700 rounded-full transition-colors"><ArrowsPointingOutIcon className="h-5 w-5"/></button>
                 </div>
                 <div className="text-center my-2">
                     <div className="relative w-24 h-24 mx-auto">
@@ -115,8 +123,8 @@ const HealthHubScreen: React.FC<HealthHubScreenProps> = (props) => {
     };
 
     const renderMealsCard = () => {
-        // FIX: Explicitly type the accumulator in the reduce function to ensure correct type inference.
-        const totalNutrition = dailyLog.meals.reduce((acc: NutritionalInfo, meal: MealLog) => {
+        // FIX: By removing explicit types on `acc` and `meal`, we allow TypeScript to correctly infer them from the initial value and array type, fixing the error.
+        const totalNutrition = dailyLog.meals.reduce((acc, meal) => {
             acc.calories += meal.nutritionalInfo?.calories || 0;
             acc.proteins += meal.nutritionalInfo?.proteins || 0;
             acc.carbs += meal.nutritionalInfo?.carbs || 0;
@@ -131,7 +139,10 @@ const HealthHubScreen: React.FC<HealthHubScreenProps> = (props) => {
                         <ForkKnifeIcon className="h-6 w-6 text-amber-400" />
                         <h3 className="text-lg font-semibold">Repas</h3>
                     </div>
-                     <button onClick={() => setActiveModal('meal')} className="bg-slate-700 hover:bg-amber-600 text-sm font-semibold py-1 px-3 rounded-md transition-colors">+ Ajouter</button>
+                    <div className="flex items-center gap-2">
+                        <button onClick={() => setActiveModal('meal')} className="bg-slate-700 hover:bg-amber-600 text-sm font-semibold py-1 px-3 rounded-md transition-colors">+ Ajouter</button>
+                        <button onClick={() => onNavigateToDetail('meals')} className="p-1 text-slate-400 hover:text-white hover:bg-slate-700 rounded-full transition-colors"><ArrowsPointingOutIcon className="h-5 w-5"/></button>
+                    </div>
                 </div>
                 <div className="flex-grow grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-2 text-sm">
@@ -156,8 +167,8 @@ const HealthHubScreen: React.FC<HealthHubScreenProps> = (props) => {
     };
 
     const renderActivitiesCard = () => {
-         // FIX: Add explicit types to the reduce function's parameters to ensure correct type inference for the accumulator.
-         const totalCalories = dailyLog.activities.reduce((acc: number, act: ActivityLog) => acc + (act.analysis?.caloriesBurned || 0), 0);
+         // FIX: By removing explicit types on `acc` and `act`, we allow TypeScript to correctly infer them from the initial value and array type, fixing the error.
+         const totalCalories = dailyLog.activities.reduce((acc, act) => acc + (act.analysis?.caloriesBurned || 0), 0);
         return (
             <div className="bg-slate-800 p-4 rounded-lg md:col-span-2 flex flex-col">
                  <div className="flex items-center justify-between mb-3">
@@ -165,7 +176,10 @@ const HealthHubScreen: React.FC<HealthHubScreenProps> = (props) => {
                         <DumbbellIcon className="h-6 w-6 text-rose-400" />
                         <h3 className="text-lg font-semibold">Activités Physiques</h3>
                     </div>
-                     <button onClick={() => setActiveModal('activity')} className="bg-slate-700 hover:bg-rose-600 text-sm font-semibold py-1 px-3 rounded-md transition-colors">+ Ajouter</button>
+                    <div className="flex items-center gap-2">
+                        <button onClick={() => setActiveModal('activity')} className="bg-slate-700 hover:bg-rose-600 text-sm font-semibold py-1 px-3 rounded-md transition-colors">+ Ajouter</button>
+                        <button onClick={() => onNavigateToDetail('activities')} className="p-1 text-slate-400 hover:text-white hover:bg-slate-700 rounded-full transition-colors"><ArrowsPointingOutIcon className="h-5 w-5"/></button>
+                    </div>
                 </div>
                 <div className="flex-grow grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-2 text-sm overflow-y-auto max-h-32">
@@ -185,9 +199,20 @@ const HealthHubScreen: React.FC<HealthHubScreenProps> = (props) => {
         );
     };
 
+    const handleAddNewSymptom = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (newSymptomName.trim() && !symptomConfig.find(s => s.name.toLowerCase() === newSymptomName.trim().toLowerCase())) {
+            onAddSymptomConfig(newSymptomName.trim());
+            setNewSymptomName('');
+        }
+    };
+
     const renderSymptomsCard = () => (
          <div className="bg-slate-800 p-4 rounded-lg md:col-span-2">
-            <h3 className="text-lg font-semibold mb-3">Symptômes</h3>
+            <div className="flex items-center justify-between mb-3">
+                <h3 className="text-lg font-semibold">Symptômes</h3>
+                <button onClick={() => onNavigateToDetail('symptoms')} className="p-1 text-slate-400 hover:text-white hover:bg-slate-700 rounded-full transition-colors"><ArrowsPointingOutIcon className="h-5 w-5"/></button>
+            </div>
              <div className="space-y-3">
                 {dailyLog.symptoms.length > 0 ? dailyLog.symptoms.map(symptom => (
                     <div key={symptom.name}>
@@ -201,6 +226,16 @@ const HealthHubScreen: React.FC<HealthHubScreenProps> = (props) => {
                     </div>
                 )) : <p className="text-slate-500 text-center py-4">Aucun symptôme configuré.</p>}
             </div>
+            <form onSubmit={handleAddNewSymptom} className="mt-4 pt-4 border-t border-slate-700 flex gap-2">
+                <input 
+                    type="text" 
+                    value={newSymptomName}
+                    onChange={e => setNewSymptomName(e.target.value)}
+                    placeholder="Nouveau symptôme..."
+                    className="w-full bg-slate-700 p-2 rounded-md text-sm"
+                />
+                <button type="submit" className="bg-slate-600 hover:bg-slate-500 text-white font-semibold px-4 rounded-md text-sm">Ajouter</button>
+            </form>
         </div>
     );
 

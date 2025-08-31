@@ -1,7 +1,6 @@
-
 import React, { useState, useCallback, useEffect } from 'react';
 import { AppState } from './types';
-import type { Question, Answer, ReportData, PatientContext, SymptomIntensity, PreQuestionnaireAnswer, SymptomCharacteristics, ChatMessage, AppointmentPrepData, EmpathyLevel, ScenarioData, PreventionProfile, PreventionPlanData, NeuroTest, StabilityTestResult, CapillaryRefillTimeResult, SpeechDyspneaResult, SymptomTrackerConfig, DailyLog, UserSettings, UserProfileData, Medication, RiskAnalysis, TrendAnalysis, TrainingProgress, DiagnosticHistoryEntry, SimulationScenario, SleepLog, MealLog, ActivityLog, MealType, ActivityIntensity, NutritionalInfo, ActivityAnalysis } from './types';
+import type { Question, Answer, ReportData, PatientContext, SymptomIntensity, PreQuestionnaireAnswer, SymptomCharacteristics, ChatMessage, AppointmentPrepData, EmpathyLevel, ScenarioData, PreventionProfile, PreventionPlanData, NeuroTest, StabilityTestResult, CapillaryRefillTimeResult, SpeechDyspneaResult, SymptomTrackerConfig, DailyLog, UserSettings, UserProfileData, Medication, RiskAnalysis, TrendAnalysis, TrainingProgress, DiagnosticHistoryEntry, SimulationScenario, SleepLog, MealLog, ActivityLog, MealType, ActivityIntensity, NutritionalInfo, ActivityAnalysis, HubModule } from './types';
 import { initializeAi, generateQuestions, generateReport, extractSymptoms, generateExclusionSymptoms, generateSelfExamPrompt, generateNeuroTests, shouldRequestCRT, shouldRequestRespiratoryRate, shouldRequestStabilityTest, shouldRequestSpeechDyspneaTest, generatePhotoPrompt, generateAppointmentPrepData, generateScenarios, generatePreventionPlan, generateDirectReport, shouldTriggerMemoryTest, generateMemoryTestWords, generateMedicationSideEffects, generateRiskAnalysis, analyzeHealthTrends, generateTrainingScenarios, generateFullSimulationScenario, analyzeMeal, analyzeActivity } from './services/geminiService';
 import { GoogleGenAI } from "@google/genai";
 import type { Chat } from "@google/genai";
@@ -41,6 +40,7 @@ import PreventionProfileScreen from './components/screens/PreventionProfileScree
 import PreventionPlanReportScreen from './components/screens/PreventionPlanReportScreen';
 import SymptomJournalSetupScreen from './components/screens/SymptomJournalSetupScreen';
 import HealthHubScreen from './components/screens/SymptomJournalScreen';
+import HealthHubDetailScreen from './components/screens/HealthHubDetailScreen';
 import PillboxScreen from './components/screens/PillboxScreen';
 import AddMedicationScreen from './components/screens/AddMedicationScreen';
 import MedicationDetailScreen from './components/screens/MedicationDetailScreen';
@@ -285,6 +285,7 @@ const App: React.FC = () => {
   const [symptomTrackingConfig, setSymptomTrackingConfig] = useState<SymptomTrackerConfig[]>([]);
   const [healthHubData, setHealthHubData] = useState<DailyLog[]>([]);
   const [trendAnalysis, setTrendAnalysis] = useState<TrendAnalysis | null>(null);
+  const [currentHubModule, setCurrentHubModule] = useState<HubModule | null>(null);
 
 
   // Pillbox state
@@ -1348,6 +1349,13 @@ const App: React.FC = () => {
                 symptoms: symptomTrackingConfig.map(s => ({ name: s.name, intensity: 0 })),
             };
             newData.push(log);
+        } else {
+            // Ensure all configured symptoms are present in the log for that day
+            symptomTrackingConfig.forEach(configSymptom => {
+                if (!log!.symptoms.some(s => s.name === configSymptom.name)) {
+                    log!.symptoms.push({ name: configSymptom.name, intensity: 0 });
+                }
+            });
         }
         return [log, newData];
     }, [healthHubData, symptomTrackingConfig]);
@@ -1413,6 +1421,21 @@ const App: React.FC = () => {
             handleError(err instanceof Error ? err.message : "Erreur lors de l'analyse des tendances.", handleAnalyzeHealthTrends);
         }
     }, [healthHubData, handleError]);
+
+    const handleNavigateToHubDetail = useCallback((module: HubModule) => {
+        setCurrentHubModule(module);
+        switch (module) {
+            case 'sleep': setAppState(AppState.SLEEP_DETAIL); break;
+            case 'hydration': setAppState(AppState.HYDRATION_DETAIL); break;
+            case 'meals': setAppState(AppState.MEALS_DETAIL); break;
+            case 'activities': setAppState(AppState.ACTIVITIES_DETAIL); break;
+            case 'symptoms': setAppState(AppState.SYMPTOMS_DETAIL); break;
+        }
+    }, []);
+
+    const handleAddSymptomConfig = useCallback((name: string) => {
+        setSymptomTrackingConfig(prev => [...prev, { name }]);
+    }, []);
 
     const handleGoToPillbox = useCallback(() => {
       setAppState(AppState.PILLBOX);
@@ -1653,7 +1676,13 @@ const App: React.FC = () => {
       case AppState.SYMPTOM_JOURNAL_SETUP:
           return <SymptomJournalSetupScreen suggestedSymptoms={symptomTrackingConfig.map(s => s.name)} onSubmit={handleSymptomJournalSetup} onBackToReport={handleBackToReport} />;
       case AppState.HEALTH_HUB:
-          return <HealthHubScreen healthData={healthHubData} symptomConfig={symptomTrackingConfig} onUpdateLog={handleUpdateDailyLog} onAddMeal={handleAddMeal} onAddActivity={handleAddActivity} onBack={handleReset} onAnalyzeTrends={handleAnalyzeHealthTrends} trendAnalysis={trendAnalysis} onClearTrendAnalysis={() => setTrendAnalysis(null)} hydrationGoal={userSettings.dailyHydrationGoal || 2000} accessLevel={userSettings.accessLevel} />;
+          return <HealthHubScreen healthData={healthHubData} symptomConfig={symptomTrackingConfig} onUpdateLog={handleUpdateDailyLog} onAddMeal={handleAddMeal} onAddActivity={handleAddActivity} onBack={handleReset} onAnalyzeTrends={handleAnalyzeHealthTrends} trendAnalysis={trendAnalysis} onClearTrendAnalysis={() => setTrendAnalysis(null)} hydrationGoal={userSettings.dailyHydrationGoal || 2000} accessLevel={userSettings.accessLevel} onNavigateToDetail={handleNavigateToHubDetail} onAddSymptomConfig={handleAddSymptomConfig} />;
+      case AppState.SLEEP_DETAIL:
+      case AppState.HYDRATION_DETAIL:
+      case AppState.MEALS_DETAIL:
+      case AppState.ACTIVITIES_DETAIL:
+      case AppState.SYMPTOMS_DETAIL:
+        return <HealthHubDetailScreen module={currentHubModule!} healthData={healthHubData} onBack={handleGoToHealthHub} hydrationGoal={userSettings.dailyHydrationGoal || 2000} />;
       case AppState.ANALYZING_HEALTH_TRENDS:
           return <Loader text="Analyse des tendances..." isComplete={isLoadComplete} onContinue={onLoadContinue!} />;
       case AppState.PILLBOX:

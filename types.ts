@@ -1,4 +1,3 @@
-
 export enum AppState {
   DISCOVER_APP,
   LANDING,
@@ -40,6 +39,11 @@ export enum AppState {
   REPORT,
   SYMPTOM_JOURNAL_SETUP,
   HEALTH_HUB, // Replaces SYMPTOM_JOURNAL
+  SLEEP_DETAIL,
+  HYDRATION_DETAIL,
+  MEALS_DETAIL,
+  ACTIVITIES_DETAIL,
+  SYMPTOMS_DETAIL,
   DIAGNOSTIC_SUMMARY,
   DIAGNOSTIC_HISTORY,
   PSYCHOLOGICAL_SUPPORT,
@@ -404,3 +408,5 @@ export interface DiagnosticHistoryEntry {
     initialSymptoms: string;
     isDirectFlow: boolean;
 }
+
+export type HubModule = 'sleep' | 'hydration' | 'meals' | 'activities' | 'symptoms';
