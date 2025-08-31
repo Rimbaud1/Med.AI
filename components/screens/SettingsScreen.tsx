@@ -1,6 +1,7 @@
 
 
 
+
 import React, { useState, useEffect } from 'react';
 import type { UserSettings, TrackedSymptom, Medication, TrainingProgress, DiagnosticHistoryEntry } from '../../types';
 import { Cog6ToothIcon, InformationCircleIcon, CheckCircleIcon, NewspaperIcon } from '../icons';
@@ -65,14 +66,22 @@ const SettingsScreen: React.FC<SettingsScreenProps> = (props) => {
     setApiKeyInput(settings.apiKey || '');
   }, [settings.apiKey]);
   
-  const handleToggleChange = (key: keyof UserSettings['saveProfileData'], value: boolean) => {
-    const newSettings = {
-      ...settings,
-      saveProfileData: {
-        ...settings.saveProfileData,
-        [key]: value,
-      },
-    };
+  const handleToggleChange = (key: keyof UserSettings['saveProfileData'] | 'enableSessionRecovery', value: boolean) => {
+    let newSettings: UserSettings;
+    if (key === 'enableSessionRecovery') {
+        newSettings = {
+            ...settings,
+            enableSessionRecovery: value,
+        };
+    } else {
+        newSettings = {
+            ...settings,
+            saveProfileData: {
+                ...settings.saveProfileData,
+                [key]: value,
+            },
+        };
+    }
     onSettingsChange(newSettings);
   };
   
@@ -195,10 +204,16 @@ const SettingsScreen: React.FC<SettingsScreenProps> = (props) => {
             </div>
           </div>
           <p className="text-slate-400 text-sm mb-4">
-            Activez ces options pour que Med.AI sauvegarde localement certaines informations afin de pré-remplir les formulaires lors de vos prochains diagnostics.
+            Gérez la manière dont Med.AI sauvegarde localement vos informations.
           </p>
           <div className="space-y-3">
-            <Toggle label="Âge et Sexe" description="Sauvegarder votre âge et sexe." enabled={settings.saveProfileData.sexAndAge} onChange={v => handleToggleChange('sexAndAge', v)} />
+            <Toggle 
+                label="Récupération de session"
+                description="Si l'application se ferme inopinément, vous proposer de reprendre le diagnostic là où vous l'avez laissé."
+                enabled={settings.enableSessionRecovery !== false}
+                onChange={v => handleToggleChange('enableSessionRecovery', v)}
+            />
+            <Toggle label="Âge et Sexe" description="Sauvegarder votre âge et sexe pour pré-remplir les formulaires." enabled={settings.saveProfileData.sexAndAge} onChange={v => handleToggleChange('sexAndAge', v)} />
             <Toggle label="Poids" description="Sauvegarder votre poids." enabled={settings.saveProfileData.weight} onChange={v => handleToggleChange('weight', v)} />
             <Toggle label="Localisation" description="Sauvegarder votre ville ou code postal." enabled={settings.saveProfileData.location} onChange={v => handleToggleChange('location', v)} />
             <Toggle label="Pathologies connues" description="Sauvegarder vos pathologies connues." enabled={settings.saveProfileData.existingConditions} onChange={v => handleToggleChange('existingConditions', v)} />

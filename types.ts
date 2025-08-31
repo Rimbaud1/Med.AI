@@ -288,6 +288,7 @@ export interface UserSettings {
     recentTravels: boolean;
   };
   apiKey?: string;
+  enableSessionRecovery?: boolean;
 }
 
 export type UserProfileData = Partial<Omit<PatientContext, 'age'> & { age: string }>;
